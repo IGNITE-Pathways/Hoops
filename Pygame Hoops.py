@@ -2,6 +2,7 @@ from colors import *
 import pygame
 import math
 import numpy
+import time
 from pygame.locals import *
 import random
 pygame.init()
@@ -18,70 +19,49 @@ bx=100
 by=425
 hx=1405
 hy=250
-bounce=False
+ball_size=75
 shoot=False
 
-def draw_dashed_line(surf, color, start_pos, end_pos, width=1, dash_length=10):
-    x1, y1 = start_pos
-    x2, y2 = end_pos
-    dl = dash_length
-
-    if (x1 == x2):
-        ycoords = [y for y in range(y1, y2, dl if y1 < y2 else -dl)]
-        xcoords = [x1] * len(ycoords)
-    elif (y1 == y2):
-        xcoords = [x for x in range(x1, x2, dl if x1 < x2 else -dl)]
-        ycoords = [y1] * len(xcoords)
-    else:
-        a = abs(x2 - x1)
-        b = abs(y2 - y1)
-        c = round(math.sqrt(a**2 + b**2))
-        dx = dl * a / c
-        dy = dl * b / c
-
-        xcoords = [x for x in numpy.arange(x1, x2, dx if x1 < x2 else -dx)]
-        ycoords = [y for y in numpy.arange(y1, y2, dy if y1 < y2 else -dy)]
-
-    next_coords = list(zip(xcoords[1::2], ycoords[1::2]))
-    last_coords = list(zip(xcoords[0::2], ycoords[0::2]))
-    for (x1, y1), (x2, y2) in zip(next_coords, last_coords):
-        start = (round(x1), round(y1))
-        end = (round(x2), round(y2))
-        pygame.draw.line(surf, color, start, end, width)
-
-screen.fill(black)
-screen.blit(hoop, (hx, hy))
-screen.blit(ball, (bx, by))
-pygame.draw.rect(screen,(0,200,0),Rect(0,780,1500,15))
 g=9.8
 
-def calc_trajectory(pos):
+def calculate_trajectory(pos,speed,angle):
     path=[]
-    #calculate slope (y2-y1)/(x2-x1)
-    slope=(by+45-pos[1])/(bx+45-pos[0])
-    angle=math.atan(slope)
-    print("slope",slope,"angle",angle)
-    #Using distance as a proxy for speed
-    speed = math.sqrt((by+45-pos[1])*(by+45-pos[1]) + (bx+45-pos[0])*(bx+45-pos[0]))
-    if pos[0] > bx+45:
-         speed = -speed
-    print("speed",speed)
     vx = speed * math.cos(angle)
     vy = -speed * math.sin(angle)
     print("vx",vx,"vy",vy)
     t=0
     while True:
         x = vx * t
-        y =  screenHeight-(screenHeight-by - 45 + vy * t - (g * t * t * 0.5))
-        path.append((x+bx+45,(y)))
-        t +=0.5
+        y =  screenHeight-(screenHeight-by - round(ball_size/2) + vy * t - (g * t * t * 0.5))
+        path.append((x+bx+round(ball_size/2),(y)))
+        t +=0.3
         if x > screenWidth or y > screenHeight or x < 0 or y < 0:
             break
+            #calc_trajectory(bx,by)
     return path
 
+def calc_trajectory(pos):
+    #calculate slope (y2-y1)/(x2-x1)
+    slope=(by+round(ball_size/2)-pos[1])/(bx+round(ball_size/2)-pos[0])
+    angle=math.atan(slope)
+    #print("slope",slope,"angle",angle)
+    #Using distance as a proxy for speed
+    speed = math.sqrt((by+round(ball_size/2)-pos[1])*(by+round(ball_size/2)-pos[1]) + (bx+round(ball_size/2)-pos[0])*(bx+round(ball_size/2)-pos[0]))
+    if pos[0] > bx+round(ball_size/2):
+         speed = -speed
+    #print("speed",speed)
+    return calculate_trajectory(pos,speed,angle)
+
 lastPos=(0,0)
+def reset_field():
+    screen.fill(black)
+    screen.blit(hoop, (hx, hy))
+    pygame.Surface.set_colorkey (ball, [0,0,0])
+    screen.blit(ball, (bx, by))
+    pygame.draw.rect(screen,(0,200,0),Rect(0,780,1500,15))
+    
+reset_field()
 while True:
-    #pygame.draw.line(screen, (white),(10,10), (50,50),width=5)
     for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -90,18 +70,35 @@ while True:
                 if event.button==1:
                     shoot=True
                     lastPos=(event.pos[0],event.pos[1])
-                    endPos=(bx+45,by+45)
-                    draw_dashed_line(screen, (white), endPos, lastPos)                    
-                if shoot:
-                    print("shoot", event.pos[0],event.pos[1])
-            if event.type == pygame.MOUSEBUTTONUP:
-                if event.button==1:
-                    print("shoot done",event.pos[0],event.pos[1] )
-                    draw_dashed_line(screen, (black),endPos, lastPos)
-                    screen.blit(ball, (bx, by))
+                    endPos=(bx+round(ball_size/2),by+round(ball_size/2))
                     path = calc_trajectory(lastPos)
-                    print("path",path)
                     for a in path:
                         pygame.draw.circle(screen,(white),(a[0],a[1]),2)
+                        pygame.display.update()
+                if shoot:
+                    print("shoot", event.pos[0],event.pos[1])
+            elif event.type == pygame.MOUSEMOTION:
+                if shoot:
+                    reset_field()
+                    lastPos=(event.pos[0],event.pos[1])
+                    path = calc_trajectory(lastPos)
+                    for a in path:
+                        pygame.draw.circle(screen,(white),(a[0],a[1]),2)
+                        pygame.display.update()
+            elif event.type == pygame.MOUSEBUTTONUP:
+                reset_field()
+                if event.button==1:
+                    print("shoot done",event.pos[0],event.pos[1] )
+                    screen.blit(ball, (bx, by))
+                    path = calc_trajectory(lastPos)
+                    for a in path:
+                        time.sleep(.03)
+                        screen.fill(black)
+                        screen.blit(hoop, (hx, hy))
+                        pygame.Surface.set_colorkey (ball, [0,0,0])
+                        screen.blit(ball, (a[0]-round(ball_size/2),a[1]-round(ball_size/2)))
+                        pygame.draw.rect(screen,(0,200,0),Rect(0,780,1500,15))
+                        pygame.display.update() 
                     shoot=False
+                    reset_field()
     pygame.display.flip()
