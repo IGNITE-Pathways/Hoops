@@ -6,7 +6,6 @@ pygame.init()
 screenWidth = 1400
 screenHeight = 800
 screen = pygame.display.set_mode((screenWidth, screenHeight))
-#game_surf = pygame.surface.Surface((screenWidth, screenHeight))
 
 clock = pygame.time.Clock()
 pygame.display.set_caption("Hoops")
@@ -90,45 +89,40 @@ def calc_trajectory(pos):
     return get_path(ball_pos,speed * math.cos(angle),speed * math.sin(angle))
 
 lastPos=(0,0)
-def reset_field():
+# Rsets the field given the ball position
+def reset_field(ball_pos):
     screen.fill(black)
     pygame.Surface.set_colorkey (ball, [0,0,0])
-    screen.blit(ball, (bx, by))
+    screen.blit(ball, (ball_pos[0], ball_pos[1]))
     pygame.Surface.set_colorkey (hoop, [0,0,0])
     screen.blit(hoop, (hx, hy))
     pygame.draw.rect(screen,(0,200,0),Rect(0,screenHeight - 20,screenWidth,15))
     # pygame.draw.rect(screen,(white),Rect(hx+10,hy+10,80,20))
     pygame.draw.rect(screen,(green),Rect(hx-2,hy+8,10,20))
 
+# Recursive function that bounces the ball off the walls
 def bounce_ball(start_pos, vx, vy):
      path, collision_point, vx, vy  = get_path(start_pos, vx, vy)
      if vx==0 or vy==0:
          print("speed is 0")
          return
      for a in path:
-        time.sleep(.03)
-        screen.fill(black)
-        pygame.Surface.set_colorkey (ball, [0,0,0])
-        screen.blit(ball, (a[0]-round(ball_size/2),a[1]-round(ball_size/2)))
-        pygame.Surface.set_colorkey (hoop, [0,0,0])
-        screen.blit(hoop, (hx, hy))
-        pygame.draw.rect(screen,(0,200,0),Rect(0,screenHeight - 20,screenWidth,15))
+        time.sleep(.01)
+        reset_field((a[0]-round(ball_size/2),a[1]-round(ball_size/2)))
         pygame.display.update() 
         rim = pygame.Rect(hx,hy+10,95,20)
         if a == collision_point:
-            #print("bounce again")
             bounce_ball(collision_point, vx, vy)
         if rim.collidepoint((a[0],a[1])):
             print("Goal!!")
             break
 
-reset_field()
+reset_field((bx,by))
 while True:
     for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                #print("mouse down")
                 if event.button==1:
                     #print("pos",event.pos[0],event.pos[1])
                     shoot=True
@@ -142,26 +136,21 @@ while True:
                     print("shoot", event.pos[0],event.pos[1])
             elif event.type == pygame.MOUSEMOTION:
                 if shoot:
-                    reset_field()
+                    reset_field((bx,by))
                     lastPos=(event.pos[0],event.pos[1])
                     path, collision_point, vx, vy = calc_trajectory(lastPos)
                     for a in path:
                         pygame.draw.circle(screen,(white),(a[0],a[1]),2)
                         pygame.display.update()
             elif event.type == pygame.MOUSEBUTTONUP:
-                reset_field()
+                reset_field((bx,by))
                 if event.button==1:
                     #print("shoot done",event.pos[0],event.pos[1] )
                     screen.blit(ball, (bx, by))
                     path, collision_point, vx, vy  = calc_trajectory(lastPos)
                     for a in path:
                         time.sleep(.01)
-                        screen.fill(black)
-                        pygame.Surface.set_colorkey (ball, [0,0,0])
-                        screen.blit(ball, (a[0]-round(ball_size/2),a[1]-round(ball_size/2)))
-                        pygame.Surface.set_colorkey (hoop, [0,0,0])
-                        screen.blit(hoop, (hx, hy))
-                        pygame.draw.rect(screen,(0,200,0),Rect(0,780,1500,15))
+                        reset_field((a[0]-round(ball_size/2),a[1]-round(ball_size/2)))
                         pygame.display.update() 
                         rim = pygame.Rect(hx,hy+10,95,20)
                         if a == collision_point:
