@@ -18,6 +18,7 @@ hx=screenWidth-95
 hy=250
 ball_size=75
 shoot=False
+damp=0.8
 
 g=9.8
 def get_path(ball_pos,vx,vy):
@@ -25,58 +26,58 @@ def get_path(ball_pos,vx,vy):
     vfx = 0
     vfy = 0
     height_gained=0
-    print("x",ball_pos[0],"y",ball_pos[1],"vx",vx,"vy",vy)
+    #print("x",ball_pos[0],"y",ball_pos[1],"vx",vx,"vy",vy)
     t=0
     while True:
         x = vx * t
         y = vy * t + (g * t * t * 0.5) + ball_pos[1]
         path.append((x+ball_pos[0],(y)))
-        print(x + ball_pos[0],y)
+        #print(x + ball_pos[0],y)
         t+=0.3
         height_gained = y-ball_pos[1]
         if x + ball_pos[0] > screenWidth - ball_size/2:
             #Hitting Right Wall
-            vfx = -vx*0.9
+            vfx = -vx*damp
             vertex_x = ball_pos[0] - vx*(vy/g)
             vertex_y = screenHeight-(screenHeight - ball_pos[1])-((0.5*vy*vy)/g)
             if x + ball_pos[0] > vertex_x:
-                print("Hitting Right Wall: downward")
-                vfy = math.sqrt((vy*vy)+(2*g*height_gained))*0.9
+                #print("Hitting Right Wall: downward")
+                vfy = math.sqrt((vy*vy)+(2*g*height_gained))*damp
             else:
-                print("Hitting Right Wall: upward")
-                vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*0.9
+                #print("Hitting Right Wall: upward")
+                vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*damp
             #print("vertex-x",vertex_x,"vertex-y",vertex_y)
             break
         elif x + ball_pos[0] < ball_size/2:
             #Hitting Left Wall
-            vfx = -vx*0.9
+            vfx = -vx*damp
             vertex_x = ball_pos[0] - vx*(vy/g)
             vertex_y = screenHeight-(screenHeight - ball_pos[1])-((0.5*vy*vy)/g)
             if x + ball_pos[0] < vertex_x:
-                vfy = math.sqrt((vy*vy)+(2*g*height_gained))*0.9
-                print("Hitting Left Wall: downward")
+                vfy = math.sqrt((vy*vy)+(2*g*height_gained))*damp
+               #print("Hitting Left Wall: downward")
             else:
-                vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*0.9
-                print("Hitting Left Wall: upward")
+                vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*damp
+                #print("Hitting Left Wall: upward")
             #print("vertex-x",vertex_x,"vertex-y",vertex_y)
             break
-        elif y > screenHeight - ball_size/2:
+        elif y > screenHeight - ball_size/2 - 15:
             #Hitting Floor 
-            vfx = vx*0.9
-            vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*0.9
-            if x + ball_pos[0] > 0:
-                print("Hitting Floor: forward")
-            else:
-                print("Hitting Floor: backward")
+            vfx = vx*damp
+            vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*damp
+            #if x + ball_pos[0] > 0:
+                #print("Hitting Floor: forward")
+            #else:
+                #print("Hitting Floor: backward")
             break
         elif y < ball_size/2:
             #Hitting Ceiling
-            vfx = vx*0.9
-            vfy = math.sqrt((vy*vy)+(2*g*height_gained))*0.9
-            if x + ball_pos[0] > 0:
-                print("Hitting Ceiling: forward")
-            else:
-                print("Hitting Ceiling: backward")
+            vfx = vx*damp
+            vfy = math.sqrt((vy*vy)+(2*g*height_gained))*damp
+            #if x + ball_pos[0] > 0:
+                #print("Hitting Ceiling: forward")
+            #else:
+                #print("Hitting Ceiling: backward")
             break
     #print("vfx",vfx,"vfy",vfy,"height_gained",-height_gained)
     return path, (x + ball_pos[0], y), vfx, vfy
@@ -92,7 +93,7 @@ def calc_trajectory(pos):
     speed = math.sqrt((by+round(ball_size/2)-pos[1])*(by+round(ball_size/2)-pos[1]) + (bx+round(ball_size/2)-pos[0])*(bx+round(ball_size/2)-pos[0]))
     if pos[0] > bx+round(ball_size/2):
          speed = -speed
-    print("speed",speed, "angle", angle, "slope", slope)
+    #print("speed",speed, "angle", angle, "slope", slope)
     ball_pos=(bx+round(ball_size/2),by+round(ball_size/2))
     return get_path(ball_pos,speed * math.cos(angle),speed * math.sin(angle))
 
@@ -118,7 +119,7 @@ def bounce_ball(start_pos, vx, vy):
         pygame.display.update() 
         rim = pygame.Rect(hx,hy+10,95,20)
         if a == collision_point:
-            bounce_ball(collision_point, vx, vy)
+            bounce_ball(path[len(path)-2], vx, vy)
         if rim.collidepoint((a[0],a[1])):
             print("Goal!!")
 
@@ -128,7 +129,7 @@ while True:
             if event.type == pygame.QUIT:
                 pygame.quit()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                print("mouse down")
+                #print("mouse down")
                 if event.button==1:
                     print("pos",event.pos[0],event.pos[1])
                     shoot=True
@@ -151,7 +152,7 @@ while True:
             elif event.type == pygame.MOUSEBUTTONUP:
                 reset_field()
                 if event.button==1:
-                    print("shoot done",event.pos[0],event.pos[1] )
+                    #print("shoot done",event.pos[0],event.pos[1] )
                     screen.blit(ball, (bx, by))
                     path, collision_point, vx, vy  = calc_trajectory(lastPos)
                     for a in path:
@@ -165,7 +166,7 @@ while True:
                         rim = pygame.Rect(hx,hy+10,95,20)
                         if a == collision_point:
                             print("Bounce baby")
-                            bounce_ball(collision_point, vx, vy)
+                            bounce_ball(path[len(path)-2], vx, vy)
                         if rim.collidepoint((a[0],a[1])):
                             print("Goal!!")
                     shoot=False
