@@ -43,10 +43,8 @@ def get_path(ball_pos,vx,vy):
             vertex_x = ball_pos[0] - vx*(vy/g)
             vertex_y = screenHeight-(screenHeight - ball_pos[1])-((0.5*vy*vy)/g)
             if x + ball_pos[0] > vertex_x:
-                #print("Hitting Right Wall: downward")
                 vfy = math.sqrt((vy*vy)+(2*g*height_gained))*damp
             else:
-                #print("Hitting Right Wall: upward")
                 vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*damp
             break
         elif (x + ball_pos[0] < ball_size/2) and vx<0:
@@ -74,21 +72,34 @@ def get_path(ball_pos,vx,vy):
     return path, (x + ball_pos[0], y), vfx, vfy
 
 def calc_trajectory(pos):
-    # calculate slope (y2-y1)/(x2-x1)
-    if (bx+round(ball_size/2)-pos[0])!=0:
-        slope=(by+round(ball_size/2)-pos[1])/(bx+round(ball_size/2)-pos[0])
-    else:
-        slope=9999999999 #proxy for infinity 
-    angle=math.atan(slope)
-    # Using distance as a proxy for speed
-    speed = math.sqrt((by+round(ball_size/2)-pos[1])*(by+round(ball_size/2)-pos[1]) + (bx+round(ball_size/2)-pos[0])*(bx+round(ball_size/2)-pos[0]))
-    if pos[0] > bx+round(ball_size/2):
-         speed = -speed
-    #print("speed",speed, "angle", angle, "slope", slope)
+    # current ball position
     ball_pos=(bx+round(ball_size/2),by+round(ball_size/2))
+
+    # calculate slope 
+    if (ball_pos[0]-pos[0])!=0:
+        slope=(ball_pos[1]-pos[1])/(ball_pos[0]-pos[0])
+    else:
+        slope=math.inf 
+
+    # Using distance as a proxy for speed
+    speed = math.sqrt((ball_pos[1]-pos[1])*(ball_pos[1]-pos[1]) + (ball_pos[0]-pos[0])*(ball_pos[0]-pos[0]))
+
+    # tan(θ) = slope, atan returns arc tangent of slope as a numeric value between -PI/2 and PI/2 radians (i.e. ±1.57)
+    angle=math.atan(slope) 
+
+    # adjust angle for right two quadrants
+    if pos[0] > ball_pos[0] and pos[1] >= ball_pos[1]:
+        #clicking in bottom right quadrant
+        angle = angle + (math.pi)
+    elif pos[0] > ball_pos[0] and pos[1] < ball_pos[1]:
+        #clicking in top right quadrant
+        angle = angle - (math.pi)
+
     return get_path(ball_pos,speed * math.cos(angle),speed * math.sin(angle))
 
+# Initialize last position on grid user clicked
 lastPos=(0,0)
+
 # Rsets the field given the ball position
 def reset_field(ball_pos):
     screen.fill(black)
