@@ -26,7 +26,7 @@ def get_path(ball_pos,vx,vy):
     vfx = 0
     vfy = 0
     height_gained=0
-    #print("x",ball_pos[0],"y",ball_pos[1],"vx",vx,"vy",vy)
+    print("x",ball_pos[0],"y",ball_pos[1],"vx",vx,"vy",vy)
     t=0
     while True:
         x = vx * t
@@ -35,7 +35,7 @@ def get_path(ball_pos,vx,vy):
         #print(x + ball_pos[0],y)
         t+=0.3
         height_gained = y-ball_pos[1]
-        if x + ball_pos[0] > screenWidth - ball_size/2:
+        if (x + ball_pos[0] > screenWidth - ball_size/2) and vx>=0:
             #Hitting Right Wall
             vfx = -vx*damp
             vertex_x = ball_pos[0] - vx*(vy/g)
@@ -48,7 +48,7 @@ def get_path(ball_pos,vx,vy):
                 vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*damp
             #print("vertex-x",vertex_x,"vertex-y",vertex_y)
             break
-        elif x + ball_pos[0] < ball_size/2:
+        elif (x + ball_pos[0] < ball_size/2) and vx<0:
             #Hitting Left Wall
             vfx = -vx*damp
             vertex_x = ball_pos[0] - vx*(vy/g)
@@ -61,16 +61,22 @@ def get_path(ball_pos,vx,vy):
                 #print("Hitting Left Wall: upward")
             #print("vertex-x",vertex_x,"vertex-y",vertex_y)
             break
-        elif y > screenHeight - ball_size/2 - 15:
+        elif (y > screenHeight - ball_size/2 - 15) and vy>0 and vx>0:
             #Hitting Floor 
             vfx = vx*damp
             vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*damp
             #if x + ball_pos[0] > 0:
-                #print("Hitting Floor: forward")
+            print("Hitting Floor: forward")
             #else:
                 #print("Hitting Floor: backward")
             break
-        elif y < ball_size/2:
+        elif (y > screenHeight - ball_size/2 - 15) and vy>0 and vx<0:
+            #Hitting Floor 
+            vfx = vx*damp
+            vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*damp
+            print("Hitting Floor: backward")
+            break
+        elif (y < ball_size/2) and vy<0:
             #Hitting Ceiling
             vfx = vx*damp
             vfy = math.sqrt((vy*vy)+(2*g*height_gained))*damp
@@ -79,7 +85,12 @@ def get_path(ball_pos,vx,vy):
             #else:
                 #print("Hitting Ceiling: backward")
             break
-    #print("vfx",vfx,"vfy",vfy,"height_gained",-height_gained)
+        elif abs(vx)<5 or abs(vy)<5:
+            print("slowball")
+            break
+        else:
+            print("vfx",vfx,"vfy",vfy,"height_gained",-height_gained)
+            print("x",x+ball_pos[0],"y",y,"vx",vx,"vy",vy)
     return path, (x + ball_pos[0], y), vfx, vfy
 
 def calc_trajectory(pos):
@@ -87,7 +98,7 @@ def calc_trajectory(pos):
     if (bx+round(ball_size/2)-pos[0])!=0:
         slope=(by+round(ball_size/2)-pos[1])/(bx+round(ball_size/2)-pos[0])
     else:
-        slope=99999 #proxy for infinity 
+        slope=9999999999 #proxy for infinity 
     angle=math.atan(slope)
     # Using distance as a proxy for speed
     speed = math.sqrt((by+round(ball_size/2)-pos[1])*(by+round(ball_size/2)-pos[1]) + (bx+round(ball_size/2)-pos[0])*(bx+round(ball_size/2)-pos[0]))
@@ -109,6 +120,9 @@ def reset_field():
 
 def bounce_ball(start_pos, vx, vy):
      path, collision_point, vx, vy  = get_path(start_pos, vx, vy)
+     if vx==0 or vy==0:
+         print("speed is 0")
+         return
      for a in path:
         time.sleep(.03)
         screen.fill(black)
@@ -119,7 +133,8 @@ def bounce_ball(start_pos, vx, vy):
         pygame.display.update() 
         rim = pygame.Rect(hx,hy+10,95,20)
         if a == collision_point:
-            bounce_ball(path[len(path)-2], vx, vy)
+            print("bounce again")
+            bounce_ball(collision_point, vx, vy)
         if rim.collidepoint((a[0],a[1])):
             print("Goal!!")
 
@@ -166,9 +181,11 @@ while True:
                         rim = pygame.Rect(hx,hy+10,95,20)
                         if a == collision_point:
                             print("Bounce baby")
-                            bounce_ball(path[len(path)-2], vx, vy)
+                            bounce_ball(collision_point, vx, vy)
+                            break
                         if rim.collidepoint((a[0],a[1])):
                             print("Goal!!")
+                            break
                     shoot=False
                     reset_field()
     pygame.display.flip()
