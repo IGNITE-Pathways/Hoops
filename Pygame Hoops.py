@@ -9,21 +9,20 @@ screen = pygame.display.set_mode((screenWidth, screenHeight))
 
 clock = pygame.time.Clock()
 pygame.display.set_caption("Hoops")
-ball = pygame.image.load(r'ball.png').convert()
+ball = pygame.image.load(r'balls/ball_1.png').convert_alpha()
+#ball = pygame.image.load(r'ball.png').convert()
 hoop = pygame.image.load(r'hoop.png').convert()
 bx=400
 by=425
 hx=screenWidth-95
 hy=250
-ball_size=75
+ball_size=70
 shoot=False
 highdamp=0.8
 lowdamp=0.95
 bounces=0
 g=9.8
-def spin_ball(degree):
-    global ball
-    ball=pygame.transform.rotate(ball, degree)
+
 def get_path(ball_pos,vx,vy):
     path=[]
     vfx = 0
@@ -108,7 +107,6 @@ lastPos=(0,0)
 def reset_field(ball_pos,degree=0):
     screen.fill(black)
     pygame.Surface.set_colorkey (ball, [0,0,0])
-    spin_ball(degree)
     screen.blit(ball, (ball_pos[0], ball_pos[1]))
     pygame.Surface.set_colorkey (hoop, [0,0,0])
     screen.blit(hoop, (hx, hy))
