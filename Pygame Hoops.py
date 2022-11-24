@@ -26,8 +26,10 @@ g=9.8
 balls=[]
 for i in range(1,36):
     balls.append(pygame.image.load(r'balls/ball_'+str(i)+'.png').convert_alpha())
+
 def get_path(ball_pos,vx,vy):
     path=[]
+    velocity=[]
     vfx = 0
     vfy = 0
     height_gained=0
@@ -36,10 +38,13 @@ def get_path(ball_pos,vx,vy):
     while True:
         x = vx * t
         y = vy * t + (g * t * t * 0.5) + ball_pos[1]
-        path.append((x+ball_pos[0],(y)))
         #print(x + ball_pos[0],y)
         t+=0.3
         height_gained = y-ball_pos[1]
+        vfx = vx
+        vfy = math.sqrt((vy*vy)+(2*g*height_gained))
+        path.append((x+ball_pos[0],(y)))
+        velocity.append((vx,vy))
         if abs(vx)<0.2 or abs(vy)<1:
             print("slowball")
             break
@@ -75,7 +80,7 @@ def get_path(ball_pos,vx,vy):
             break
     #print("vfx",vfx,"vfy",vfy,"height_gained",-height_gained)
     #print("x",x+ball_pos[0],"y",y,"vx",vx,"vy",vy)
-    return path, (x + ball_pos[0], y), vfx, vfy
+    return path, velocity, (x + ball_pos[0], y), vfx, vfy
 
 def calc_trajectory(pos):
     # current ball position
@@ -125,7 +130,7 @@ def reset_field(ball_pos,degree=0):
 def bounce_ball(start_pos, vx, vy):
      global bounces
      bounces+=1
-     path, collision_point, vx, vy  = get_path(start_pos, vx, vy)
+     path, velocity, collision_point, vx, vy  = get_path(start_pos, vx, vy)
      if vx==0 or vy==0:
          print("speed is 0")
          return
@@ -153,7 +158,7 @@ while True:
                     shoot=True
                     lastPos=(event.pos[0],event.pos[1])
                     endPos=(bx+round(ball_size/2),by+round(ball_size/2))
-                    path, collision_point, vx, vy  = calc_trajectory(lastPos)
+                    path, velocity, collision_point, vx, vy  = calc_trajectory(lastPos)
                     for a in path:
                         pygame.draw.circle(screen,(white),(a[0],a[1]),2)
                         pygame.display.update()
@@ -163,7 +168,7 @@ while True:
                 if shoot:
                     reset_field((bx,by))
                     lastPos=(event.pos[0],event.pos[1])
-                    path, collision_point, vx, vy = calc_trajectory(lastPos)
+                    path, velocity, collision_point, vx, vy = calc_trajectory(lastPos)
                     for a in path:
                         pygame.draw.circle(screen,(white),(a[0],a[1]),2)
                         pygame.display.update()
@@ -172,7 +177,7 @@ while True:
                 if event.button==1:
                     #print("shoot done",event.pos[0],event.pos[1] )
                     #screen.blit(ball, (bx, by))
-                    path, collision_point, vx, vy  = calc_trajectory(lastPos)
+                    path, velocity, collision_point, vx, vy  = calc_trajectory(lastPos)
                     for a in path:
                         time.sleep(.02)
                         reset_field((a[0]-round(ball_size/2),a[1]-round(ball_size/2)))
