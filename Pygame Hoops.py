@@ -11,7 +11,8 @@ clock = pygame.time.Clock()
 pygame.display.set_caption("Hoops")
 #ball = pygame.image.load(r'balls/ball_1.png').convert_alpha()
 #ball = pygame.image.load(r'ball.png').convert()
-hoop = pygame.image.load(r'hoop.png').convert()
+hoop_back = pygame.image.load(r'hoop_back.png').convert_alpha()
+hoop_front = pygame.image.load(r'hoop_front.png').convert_alpha()
 bx=400
 by=425
 hx=screenWidth-95
@@ -110,13 +111,15 @@ def reset_field(ball_pos,degree=0):
     if degree<0 or degree>35:
         degree=0
     screen.fill(black)
+    pygame.Surface.set_colorkey (hoop_back, [0,0,0])
+    screen.blit(hoop_back, (hx+2, hy+12))
     pygame.Surface.set_colorkey (balls[degree], [0,0,0])
     screen.blit(balls[degree], (ball_pos[0], ball_pos[1]))
-    pygame.Surface.set_colorkey (hoop, [0,0,0])
-    screen.blit(hoop, (hx, hy))
+    pygame.Surface.set_colorkey (hoop_front, [0,0,0])
+    screen.blit(hoop_front, (hx, hy))
     pygame.draw.rect(screen,(0,200,0),Rect(0,screenHeight - 20,screenWidth,15))
     # pygame.draw.rect(screen,(white),Rect(hx+10,hy+10,80,20))
-    pygame.draw.rect(screen,(green),Rect(hx-2,hy+8,10,20))
+    #pygame.draw.rect(screen,(green),Rect(hx-2,hy+8,10,20))
 
 # Recursive function that bounces the ball off the walls
 def bounce_ball(start_pos, vx, vy):
@@ -128,7 +131,7 @@ def bounce_ball(start_pos, vx, vy):
          return
      for a in path:
         time.sleep(.02)
-        degree=round(round(a[0]%68)/2)
+        degree=round(round(a[0]%(34*3))/3)
         print("degree", degree)
         reset_field((a[0]-round(ball_size/2),a[1]-round(ball_size/2)),degree=degree)
         pygame.display.update() 
