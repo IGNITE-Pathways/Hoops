@@ -200,14 +200,16 @@ while True:
                         pygame.display.update()
             elif event.type == pygame.MOUSEMOTION:
                 if shoot:
-                    reset_field((starting_ball_pos[0]-round(ball_size/2),starting_ball_pos[1]-round(ball_size/2)))
+                    degree=round(round(starting_ball_pos[0]%(34*3))/3)
+                    reset_field((starting_ball_pos[0]-round(ball_size/2),starting_ball_pos[1]-round(ball_size/2)),degree=degree)
                     lastPos=(event.pos[0],event.pos[1])
                     path, velocity, collision_point, vx, vy = calc_trajectory(lastPos)
                     for p in path:
                         pygame.draw.circle(screen,(white),(p[0],p[1]),2)
                         pygame.display.update()
             elif event.type == pygame.MOUSEBUTTONUP:
-                reset_field((starting_ball_pos[0]-round(ball_size/2),starting_ball_pos[1]-round(ball_size/2)))
+                degree=round(round(starting_ball_pos[0]%(34*3))/3)
+                reset_field((starting_ball_pos[0]-round(ball_size/2),starting_ball_pos[1]-round(ball_size/2)),degree=degree)
                 if event.button==1:
                     path, velocity, collision_point, vx, vy  = calc_trajectory(lastPos)
                     process_path(path, velocity, collision_point, vx, vy)
