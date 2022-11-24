@@ -1,6 +1,7 @@
 
 *.pyc
 .DS_Store
-__pycache__/colors.cpython-310.pyc
+__pycache__
+__pycache__/*
 *.pyc
 __pycache__/colors.cpython-310.pyc
