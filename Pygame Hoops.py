@@ -17,55 +17,59 @@ hx=screenWidth-95
 hy=250
 ball_size=75
 shoot=False
-damp=0.8
-
+highdamp=0.8
+lowdamp=0.95
+bounces=0
 g=9.8
+def spin_ball(degree):
+    global ball
+    ball=pygame.transform.rotate(ball, degree)
 def get_path(ball_pos,vx,vy):
     path=[]
     vfx = 0
     vfy = 0
     height_gained=0
     #print("x",ball_pos[0],"y",ball_pos[1],"vx",vx,"vy",vy)
-    t=.2
+    t=.3
     while True:
         x = vx * t
         y = vy * t + (g * t * t * 0.5) + ball_pos[1]
         path.append((x+ball_pos[0],(y)))
         #print(x + ball_pos[0],y)
-        t+=0.2
+        t+=0.3
         height_gained = y-ball_pos[1]
-        if abs(vx)<2 or abs(vy)<2:
+        if abs(vx)<0.2 or abs(vy)<1:
             print("slowball")
             break
         elif (x + ball_pos[0] > screenWidth - ball_size/2) and vx>=0:
             #Hitting Right Wall
-            vfx = -vx*damp
+            vfx = -vx*highdamp
             vertex_x = ball_pos[0] - vx*(vy/g)
             vertex_y = screenHeight-(screenHeight - ball_pos[1])-((0.5*vy*vy)/g)
             if x + ball_pos[0] > vertex_x:
-                vfy = math.sqrt((vy*vy)+(2*g*height_gained))*damp
+                vfy = math.sqrt((vy*vy)+(2*g*height_gained))*lowdamp
             else:
-                vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*damp
+                vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*lowdamp
             break
         elif (x + ball_pos[0] < ball_size/2) and vx<0:
             #Hitting Left Wall
-            vfx = -vx*damp
+            vfx = -vx*highdamp
             vertex_x = ball_pos[0] - vx*(vy/g)
             vertex_y = screenHeight-(screenHeight - ball_pos[1])-((0.5*vy*vy)/g)
             if x + ball_pos[0] < vertex_x:
-                vfy = math.sqrt((vy*vy)+(2*g*height_gained))*damp
+                vfy = math.sqrt((vy*vy)+(2*g*height_gained))*lowdamp
             else:
-                vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*damp
+                vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*lowdamp
             break
         elif (y > screenHeight - ball_size/2 - 15):
             #Hitting Floor 
-            vfx = vx*damp
-            vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*damp
+            vfx = vx*lowdamp
+            vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*highdamp
             break
         elif (y < ball_size/2) and vy<0:
             #Hitting Ceiling
-            vfx = vx*damp
-            vfy = math.sqrt((vy*vy)+(2*g*height_gained))*damp
+            vfx = vx*lowdamp
+            vfy = math.sqrt((vy*vy)+(2*g*height_gained))*highdamp
             break
     #print("vfx",vfx,"vfy",vfy,"height_gained",-height_gained)
     #print("x",x+ball_pos[0],"y",y,"vx",vx,"vy",vy)
@@ -101,9 +105,10 @@ def calc_trajectory(pos):
 lastPos=(0,0)
 
 # Rsets the field given the ball position
-def reset_field(ball_pos):
+def reset_field(ball_pos,degree=0):
     screen.fill(black)
     pygame.Surface.set_colorkey (ball, [0,0,0])
+    spin_ball(degree)
     screen.blit(ball, (ball_pos[0], ball_pos[1]))
     pygame.Surface.set_colorkey (hoop, [0,0,0])
     screen.blit(hoop, (hx, hy))
@@ -113,12 +118,14 @@ def reset_field(ball_pos):
 
 # Recursive function that bounces the ball off the walls
 def bounce_ball(start_pos, vx, vy):
+     global bounces
+     bounces+=1
      path, collision_point, vx, vy  = get_path(start_pos, vx, vy)
      if vx==0 or vy==0:
          print("speed is 0")
          return
      for a in path:
-        time.sleep(.01)
+        time.sleep(.02)
         reset_field((a[0]-round(ball_size/2),a[1]-round(ball_size/2)))
         pygame.display.update() 
         rim = pygame.Rect(hx,hy+10,95,20)
@@ -160,7 +167,7 @@ while True:
                     screen.blit(ball, (bx, by))
                     path, collision_point, vx, vy  = calc_trajectory(lastPos)
                     for a in path:
-                        time.sleep(.01)
+                        time.sleep(.02)
                         reset_field((a[0]-round(ball_size/2),a[1]-round(ball_size/2)))
                         pygame.display.update() 
                         rim = pygame.Rect(hx,hy+10,95,20)
