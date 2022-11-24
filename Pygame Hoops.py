@@ -9,7 +9,7 @@ screen = pygame.display.set_mode((screenWidth, screenHeight))
 
 clock = pygame.time.Clock()
 pygame.display.set_caption("Hoops")
-ball = pygame.image.load(r'balls/ball_1.png').convert_alpha()
+#ball = pygame.image.load(r'balls/ball_1.png').convert_alpha()
 #ball = pygame.image.load(r'ball.png').convert()
 hoop = pygame.image.load(r'hoop.png').convert()
 bx=400
@@ -22,7 +22,9 @@ highdamp=0.8
 lowdamp=0.95
 bounces=0
 g=9.8
-
+balls=[]
+for i in range(1,36):
+    balls.append(pygame.image.load(r'balls/ball_'+str(i)+'.png').convert_alpha())
 def get_path(ball_pos,vx,vy):
     path=[]
     vfx = 0
@@ -105,9 +107,11 @@ lastPos=(0,0)
 
 # Rsets the field given the ball position
 def reset_field(ball_pos,degree=0):
+    if degree<0 or degree>35:
+        degree=0
     screen.fill(black)
-    pygame.Surface.set_colorkey (ball, [0,0,0])
-    screen.blit(ball, (ball_pos[0], ball_pos[1]))
+    pygame.Surface.set_colorkey (balls[degree], [0,0,0])
+    screen.blit(balls[degree], (ball_pos[0], ball_pos[1]))
     pygame.Surface.set_colorkey (hoop, [0,0,0])
     screen.blit(hoop, (hx, hy))
     pygame.draw.rect(screen,(0,200,0),Rect(0,screenHeight - 20,screenWidth,15))
@@ -124,7 +128,9 @@ def bounce_ball(start_pos, vx, vy):
          return
      for a in path:
         time.sleep(.02)
-        reset_field((a[0]-round(ball_size/2),a[1]-round(ball_size/2)))
+        degree=round(round(a[0]%68)/2)
+        print("degree", degree)
+        reset_field((a[0]-round(ball_size/2),a[1]-round(ball_size/2)),degree=degree)
         pygame.display.update() 
         rim = pygame.Rect(hx,hy+10,95,20)
         if a == collision_point:
@@ -162,7 +168,7 @@ while True:
                 reset_field((bx,by))
                 if event.button==1:
                     #print("shoot done",event.pos[0],event.pos[1] )
-                    screen.blit(ball, (bx, by))
+                    #screen.blit(ball, (bx, by))
                     path, collision_point, vx, vy  = calc_trajectory(lastPos)
                     for a in path:
                         time.sleep(.02)
