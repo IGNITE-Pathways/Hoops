@@ -9,8 +9,6 @@ screen = pygame.display.set_mode((screenWidth, screenHeight))
 
 clock = pygame.time.Clock()
 pygame.display.set_caption("Hoops")
-#ball = pygame.image.load(r'balls/ball_1.png').convert_alpha()
-#ball = pygame.image.load(r'ball.png').convert()
 hoop_back = pygame.image.load(r'hoop_back.png').convert_alpha()
 hoop_front = pygame.image.load(r'hoop_front.png').convert_alpha()
 bx=400
@@ -18,12 +16,17 @@ by=425
 hx=screenWidth-95
 hy=250
 ball_size=70
+floor_height=100
 shoot=False
 highdamp=0.8
 lowdamp=0.95
 bounces=0
 g=9.8
 balls=[]
+
+# Starting ball position
+starting_ball_pos=(bx+round(ball_size/2),by+round(ball_size/2))
+
 for i in range(1,36):
     balls.append(pygame.image.load(r'balls/ball_'+str(i)+'.png').convert_alpha())
 
@@ -33,7 +36,6 @@ def get_path(ball_pos,vx,vy):
     vfx = 0
     vfy = 0
     height_gained=0
-    #print("x",ball_pos[0],"y",ball_pos[1],"vx",vx,"vy",vy)
     t=.3
     while True:
         x = vx * t
@@ -68,7 +70,7 @@ def get_path(ball_pos,vx,vy):
             else:
                 vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*lowdamp
             break
-        elif (y > screenHeight - ball_size/2 - 15):
+        elif (y + ball_size/2 > screenHeight - floor_height + 5):
             #Hitting Floor 
             vfx = vx*lowdamp
             vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*highdamp
@@ -78,35 +80,30 @@ def get_path(ball_pos,vx,vy):
             vfx = vx*lowdamp
             vfy = math.sqrt((vy*vy)+(2*g*height_gained))*highdamp
             break
-    #print("vfx",vfx,"vfy",vfy,"height_gained",-height_gained)
-    #print("x",x+ball_pos[0],"y",y,"vx",vx,"vy",vy)
     return path, velocity, (x + ball_pos[0], y), vfx, vfy
 
 def calc_trajectory(pos):
-    # current ball position
-    ball_pos=(bx+round(ball_size/2),by+round(ball_size/2))
-
     # calculate slope 
-    if (ball_pos[0]-pos[0])!=0:
-        slope=(ball_pos[1]-pos[1])/(ball_pos[0]-pos[0])
+    if (starting_ball_pos[0]-pos[0])!=0:
+        slope=(starting_ball_pos[1]-pos[1])/(starting_ball_pos[0]-pos[0])
     else:
         slope=math.inf 
 
     # Using distance as a proxy for speed
-    speed = math.sqrt((ball_pos[1]-pos[1])*(ball_pos[1]-pos[1]) + (ball_pos[0]-pos[0])*(ball_pos[0]-pos[0]))
+    speed = math.sqrt((starting_ball_pos[1]-pos[1])*(starting_ball_pos[1]-pos[1]) + (starting_ball_pos[0]-pos[0])*(starting_ball_pos[0]-pos[0]))
 
     # tan(θ) = slope, atan returns arc tangent of slope as a numeric value between -PI/2 and PI/2 radians (i.e. ±1.57)
     angle=math.atan(slope) 
 
     # adjust angle for right two quadrants
-    if pos[0] > ball_pos[0] and pos[1] >= ball_pos[1]:
+    if pos[0] > starting_ball_pos[0] and pos[1] >= starting_ball_pos[1]:
         #clicking in bottom right quadrant
         angle = angle + (math.pi)
-    elif pos[0] > ball_pos[0] and pos[1] < ball_pos[1]:
+    elif pos[0] > starting_ball_pos[0] and pos[1] < starting_ball_pos[1]:
         #clicking in top right quadrant
         angle = angle - (math.pi)
 
-    return get_path(ball_pos,speed * math.cos(angle),speed * math.sin(angle))
+    return get_path(starting_ball_pos,speed * math.cos(angle),speed * math.sin(angle))
 
 # Initialize last position on grid user clicked
 lastPos=(0,0)
@@ -116,28 +113,23 @@ def reset_field(ball_pos,degree=0):
     if degree<0 or degree>35:
         degree=0
     screen.fill(black)
+    # Back Side of Hoop
     pygame.Surface.set_colorkey (hoop_back, [0,0,0])
     screen.blit(hoop_back, (hx+2, hy+12))
+    # Ball itself
     pygame.Surface.set_colorkey (balls[degree], [0,0,0])
     screen.blit(balls[degree], (ball_pos[0], ball_pos[1]))
+    # Front of the Hoop
     pygame.Surface.set_colorkey (hoop_front, [0,0,0])
     screen.blit(hoop_front, (hx, hy))
-    pygame.draw.rect(screen,(0,200,0),Rect(0,screenHeight - 20,screenWidth,15))
-    # pygame.draw.rect(screen,(white),Rect(hx+10,hy+10,80,20))
-    #pygame.draw.rect(screen,(green),Rect(hx-2,hy+8,10,20))
+    # Floor 
+    pygame.draw.rect(screen,(0,180,0),Rect(10,screenHeight - floor_height,screenWidth-20,15))
+    pygame.draw.rect(screen,(green),Rect(hx-2,hy+8,10,20))
 
-# Recursive function that bounces the ball off the walls
-def bounce_ball(start_pos, vx, vy):
-     global bounces
-     bounces+=1
-     path, velocity, collision_point, vx, vy  = get_path(start_pos, vx, vy)
-     if vx==0 or vy==0:
-         print("speed is 0")
-         return
-     for a in path:
+def process_path(path, velocity, collision_point, vx, vy):
+    for a in path:
         time.sleep(.02)
         degree=round(round(a[0]%(34*3))/3)
-        print("degree", degree)
         reset_field((a[0]-round(ball_size/2),a[1]-round(ball_size/2)),degree=degree)
         pygame.display.update() 
         rim = pygame.Rect(hx,hy+10,95,20)
@@ -147,48 +139,45 @@ def bounce_ball(start_pos, vx, vy):
             print("Goal!!")
             break
 
-reset_field((bx,by))
+# Recursive function that bounces the ball off the walls
+def bounce_ball(start_pos, vx, vy):
+    global bounces, starting_ball_pos
+    bounces+=1
+    path, velocity, collision_point, vx, vy  = get_path(start_pos, vx, vy)
+    if abs(vx)<0.2 or abs(vy)<1:
+        print("speed is 0")
+        starting_ball_pos=collision_point
+        return
+    process_path(path, velocity, collision_point, vx, vy)
+
+# Main Program -- Start --- 
+reset_field((starting_ball_pos[0]-round(ball_size/2),starting_ball_pos[1]-round(ball_size/2)))
+
 while True:
     for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button==1:
-                    #print("pos",event.pos[0],event.pos[1])
                     shoot=True
                     lastPos=(event.pos[0],event.pos[1])
-                    endPos=(bx+round(ball_size/2),by+round(ball_size/2))
+                    endPos=(starting_ball_pos[0],starting_ball_pos[1])
                     path, velocity, collision_point, vx, vy  = calc_trajectory(lastPos)
                     for a in path:
                         pygame.draw.circle(screen,(white),(a[0],a[1]),2)
                         pygame.display.update()
-                if shoot:
-                    print("shoot", event.pos[0],event.pos[1])
             elif event.type == pygame.MOUSEMOTION:
                 if shoot:
-                    reset_field((bx,by))
+                    reset_field((starting_ball_pos[0]-round(ball_size/2),starting_ball_pos[1]-round(ball_size/2)))
                     lastPos=(event.pos[0],event.pos[1])
                     path, velocity, collision_point, vx, vy = calc_trajectory(lastPos)
                     for a in path:
                         pygame.draw.circle(screen,(white),(a[0],a[1]),2)
                         pygame.display.update()
             elif event.type == pygame.MOUSEBUTTONUP:
-                reset_field((bx,by))
+                reset_field((starting_ball_pos[0]-round(ball_size/2),starting_ball_pos[1]-round(ball_size/2)))
                 if event.button==1:
-                    #print("shoot done",event.pos[0],event.pos[1] )
-                    #screen.blit(ball, (bx, by))
                     path, velocity, collision_point, vx, vy  = calc_trajectory(lastPos)
-                    for a in path:
-                        time.sleep(.02)
-                        reset_field((a[0]-round(ball_size/2),a[1]-round(ball_size/2)))
-                        pygame.display.update() 
-                        rim = pygame.Rect(hx,hy+10,95,20)
-                        if a == collision_point:
-                            print("Bounce baby")
-                            bounce_ball(collision_point, vx, vy)
-                            break
-                        if rim.collidepoint((a[0],a[1])):
-                            print("Goal!!")
-                            break
+                    process_path(path, velocity, collision_point, vx, vy)
                     shoot=False
     pygame.display.flip()
