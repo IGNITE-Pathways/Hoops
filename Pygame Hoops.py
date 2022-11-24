@@ -50,8 +50,10 @@ def get_path(ball_pos,vx,vy):
         vertex_y = ball_pos[1]-((0.5*vy*vy)/g)
         vfx = vx
         vfy = math.sqrt((vy*vy)+(2*g*height_gained)) * (vy/abs(vy))
-        if (x + ball_pos[0])*(vx/abs(vx)) > vertex_x*(vx/abs(vx)):
-            vfy = -vfy
+        if vy < 0:
+            #Ball moving upward so will go through vertex
+            if (x + ball_pos[0])*(vx/abs(vx)) > vertex_x*(vx/abs(vx)):
+                vfy = -vfy
 
         path.append((x+ball_pos[0],y))
         velocity.append((vfx,vfy))
@@ -141,7 +143,7 @@ def process_path(path, velocity, collision_point, vx, vy):
         p = path[i]
         #velocity at point p
         v = velocity[i]
-        print("p", p,"\t", "v", v)
+        #print("p", p,"\t", "v", v)
         degree=round(round(p[0]%(34*3))/3)
         reset_field((p[0]-round(ball_size/2),p[1]-round(ball_size/2)),degree=degree)
         pygame.display.update() 
