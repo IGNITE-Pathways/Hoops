@@ -3,11 +3,12 @@ import pygame, math, numpy, time, random
 from pygame.locals import *
 
 pygame.init()
+
+# Initialize Global Variables 
 screenWidth = 1400
 screenHeight = 800
 screen = pygame.display.set_mode((screenWidth, screenHeight))
 
-clock = pygame.time.Clock()
 pygame.display.set_caption("Hoops")
 hoop_back = pygame.image.load(r'hoop_back.png').convert_alpha()
 hoop_front = pygame.image.load(r'hoop_front.png').convert_alpha()
@@ -23,6 +24,8 @@ lowdamp=0.95
 bounces=0
 g=9.8
 balls=[]
+skip_next_rim_check=False
+skip_next_goal_check=False
 
 # Starting ball position
 starting_ball_pos=(bx+round(ball_size/2),by+round(ball_size/2))
@@ -40,42 +43,43 @@ def get_path(ball_pos,vx,vy):
     while True:
         x = vx * t
         y = vy * t + (g * t * t * 0.5) + ball_pos[1]
-        #print(x + ball_pos[0],y)
+        #print("vy", vy, "x", x + ball_pos[0], "\t", "y", y, "\t", "t", t, "\t")
         t+=0.3
         height_gained = y-ball_pos[1]
+        vertex_x = ball_pos[0] - vx*(vy/g)
+        vertex_y = ball_pos[1]-((0.5*vy*vy)/g)
         vfx = vx
-        vfy = math.sqrt((vy*vy)+(2*g*height_gained))
-        path.append((x+ball_pos[0],(y)))
-        velocity.append((vx,vy))
+        vfy = math.sqrt((vy*vy)+(2*g*height_gained)) * (vy/abs(vy))
+        if (x + ball_pos[0])*(vx/abs(vx)) > vertex_x*(vx/abs(vx)):
+            vfy = -vfy
+
+        path.append((x+ball_pos[0],y))
+        velocity.append((vfx,vfy))
         if abs(vx)<0.2 or abs(vy)<1:
             print("slowball")
             break
-        elif (x + ball_pos[0] > screenWidth - ball_size/2) and vx>=0:
+        elif (x + ball_pos[0] + ball_size/2 >= screenWidth) and vx>=0:
             #Hitting Right Wall
             vfx = -vx*highdamp
-            vertex_x = ball_pos[0] - vx*(vy/g)
-            vertex_y = screenHeight-(screenHeight - ball_pos[1])-((0.5*vy*vy)/g)
             if x + ball_pos[0] > vertex_x:
                 vfy = math.sqrt((vy*vy)+(2*g*height_gained))*lowdamp
             else:
                 vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*lowdamp
             break
-        elif (x + ball_pos[0] < ball_size/2) and vx<0:
+        elif (x + ball_pos[0] - ball_size/2 <= 0) and vx<0:
             #Hitting Left Wall
             vfx = -vx*highdamp
-            vertex_x = ball_pos[0] - vx*(vy/g)
-            vertex_y = screenHeight-(screenHeight - ball_pos[1])-((0.5*vy*vy)/g)
             if x + ball_pos[0] < vertex_x:
                 vfy = math.sqrt((vy*vy)+(2*g*height_gained))*lowdamp
             else:
                 vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*lowdamp
             break
-        elif (y + ball_size/2 > screenHeight - floor_height + 5):
+        elif (y + ball_size/2 >= screenHeight - floor_height + 5):
             #Hitting Floor 
             vfx = vx*lowdamp
             vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*highdamp
             break
-        elif (y < ball_size/2) and vy<0:
+        elif (y <= ball_size/2) and vy<0:
             #Hitting Ceiling
             vfx = vx*lowdamp
             vfy = math.sqrt((vy*vy)+(2*g*height_gained))*highdamp
@@ -124,23 +128,48 @@ def reset_field(ball_pos,degree=0):
     screen.blit(hoop_front, (hx, hy))
     # Floor 
     pygame.draw.rect(screen,(0,180,0),Rect(10,screenHeight - floor_height,screenWidth-20,15))
-    pygame.draw.rect(screen,(green),Rect(hx-2,hy+8,10,20))
+    # Rim Front Edge
+    #pygame.draw.rect(screen,(green),Rect(hx-2,hy+5,10,20))
 
+# Render path
 def process_path(path, velocity, collision_point, vx, vy):
-    for a in path:
+    global skip_next_rim_check, skip_next_goal_check
+    #print("process_path", "\t", collision_point, "\t", vx, "\t", vy)
+    for i in range(len(path)):
         time.sleep(.02)
-        degree=round(round(a[0]%(34*3))/3)
-        reset_field((a[0]-round(ball_size/2),a[1]-round(ball_size/2)),degree=degree)
+        #point p on the path
+        p = path[i]
+        #velocity at point p
+        v = velocity[i]
+        print("p", p,"\t", "v", v)
+        degree=round(round(p[0]%(34*3))/3)
+        reset_field((p[0]-round(ball_size/2),p[1]-round(ball_size/2)),degree=degree)
         pygame.display.update() 
-        rim = pygame.Rect(hx,hy+10,95,20)
-        if a == collision_point:
+        rim = pygame.Rect(hx,hy+10,95,50)
+        rim_front_edge= pygame.Rect(hx-2,hy+5,5,10)
+        ball_rect=pygame.Rect(p[0] - round(ball_size/2) + 5, p[1] - round(ball_size/2) + 5, ball_size - 10, ball_size - 10)
+        if p == collision_point:
+            #bounce the ball off the walls
+            skip_next_rim_check=False
+            skip_next_goal_check=False
             bounce_ball(collision_point, vx, vy)
-        if rim.collidepoint((a[0],a[1])):
+        elif rim_front_edge.colliderect(ball_rect) and not skip_next_rim_check:
+            #bounce off the rim edge
+            print("Rim Edge", "\t", (p[0], p[1]), "\t", -v[0]*1.1, "\t", v[1]*1.1)
+            skip_next_rim_check=True
+            bounce_ball((p[0], p[1]), -v[0]*1.1, v[1]*1.1)
+            break
+        elif rim.collidepoint((p[0],p[1])) and not skip_next_goal_check:
             print("Goal!!")
+            time.sleep(0.1)
+            # Make the ball fall down after hitting the goal
+            skip_next_goal_check=True
+            bounce_ball((p[0], p[1]), v[0]/abs(v[0]), abs(v[1]*highdamp))
             break
 
 # Recursive function that bounces the ball off the walls
 def bounce_ball(start_pos, vx, vy):
+    #print("bounce_ball", "\t", start_pos, "\t", vx, "\t", vy)
     global bounces, starting_ball_pos
     bounces+=1
     path, velocity, collision_point, vx, vy  = get_path(start_pos, vx, vy)
@@ -148,7 +177,8 @@ def bounce_ball(start_pos, vx, vy):
         print("speed is 0")
         starting_ball_pos=collision_point
         return
-    process_path(path, velocity, collision_point, vx, vy)
+    else:
+        process_path(path, velocity, collision_point, vx, vy)
 
 # Main Program -- Start --- 
 reset_field((starting_ball_pos[0]-round(ball_size/2),starting_ball_pos[1]-round(ball_size/2)))
@@ -163,16 +193,16 @@ while True:
                     lastPos=(event.pos[0],event.pos[1])
                     endPos=(starting_ball_pos[0],starting_ball_pos[1])
                     path, velocity, collision_point, vx, vy  = calc_trajectory(lastPos)
-                    for a in path:
-                        pygame.draw.circle(screen,(white),(a[0],a[1]),2)
+                    for p in path:
+                        pygame.draw.circle(screen,(white),(p[0],p[1]),2)
                         pygame.display.update()
             elif event.type == pygame.MOUSEMOTION:
                 if shoot:
                     reset_field((starting_ball_pos[0]-round(ball_size/2),starting_ball_pos[1]-round(ball_size/2)))
                     lastPos=(event.pos[0],event.pos[1])
                     path, velocity, collision_point, vx, vy = calc_trajectory(lastPos)
-                    for a in path:
-                        pygame.draw.circle(screen,(white),(a[0],a[1]),2)
+                    for p in path:
+                        pygame.draw.circle(screen,(white),(p[0],p[1]),2)
                         pygame.display.update()
             elif event.type == pygame.MOUSEBUTTONUP:
                 reset_field((starting_ball_pos[0]-round(ball_size/2),starting_ball_pos[1]-round(ball_size/2)))
