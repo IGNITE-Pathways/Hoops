@@ -13,13 +13,15 @@ pygame.display.set_caption("Hoops")
 hoop_back = pygame.image.load(r'hoop_back.png').convert_alpha()
 hoop_front = pygame.image.load(r'hoop_front.png').convert_alpha()
 background = pygame.image.load(r'bg.png').convert_alpha()
+background = pygame.image.load(r'bg.png').convert_alpha()
+glassboard = pygame.image.load(r'glassboard.png').convert_alpha()
 
 bx=400
 by=425
-hx=screenWidth-95
+hx=screenWidth-140
 hy=250
 ball_size=70
-floor_height=100
+floor_height=80
 shoot=False
 highdamp=0.8
 lowdamp=0.95
@@ -29,6 +31,8 @@ balls=[]
 score=0
 skip_next_rim_check=False
 skip_next_goal_check=False
+front_rim=Rect(hx-2,hy+5,10,20)
+back_glassboard=Rect(screenWidth-55,hy-60,10,80)
 
 # Starting ball position
 starting_ball_pos=(bx+round(ball_size/2),by+round(ball_size/2))
@@ -128,6 +132,8 @@ def reset_field(ball_pos,degree=0):
         degree=0
     #screen.fill(black)
     screen.blit(background, (0,0))
+    pygame.Surface.set_colorkey (glassboard, [0,0,0])
+    screen.blit(glassboard, (hx+50, hy-100))
     # Back Side of Hoop
     pygame.Surface.set_colorkey (hoop_back, [0,0,0])
     screen.blit(hoop_back, (hx+2, hy+12))
@@ -142,11 +148,11 @@ def reset_field(ball_pos,degree=0):
     # Score
     show_text("Score: "+str(score),screenWidth/2-50,25,blue,30)
     # Rim Front edge
-    pygame.draw.rect(screen,(green),Rect(hx-2,hy+5,5,10))
+    #pygame.draw.rect(screen,(green),front_rim)
     # Rim Back Edge 
-    pygame.draw.rect(screen,(green),Rect(screenWidth-10,hy+18,5,20))
+    #pygame.draw.rect(screen,(green),back_glassboard)
     # Rim
-    pygame.draw.rect(screen, (blue),Rect(hx+5,hy+10,70,50))
+    #pygame.draw.rect(screen, (blue),Rect(hx+5,hy+10,70,50))
 
 # Render path
 def process_path(path, velocity, collision_point, vx, vy):
@@ -163,8 +169,9 @@ def process_path(path, velocity, collision_point, vx, vy):
         reset_field((p[0]-round(ball_size/2),p[1]-round(ball_size/2)),degree=degree)
         pygame.display.update() 
         rim = pygame.Rect(hx,hy+10,95,50)
-        rim_front_edge= pygame.Rect(hx-2,hy+5,5,10)
-        rim_back_edge= pygame.Rect(screenWidth-10,hy+18,5,20)
+        rim_front_edge= pygame.Rect(front_rim)
+        #rim_back_edge= pygame.Rect(screenWidth-10,hy+18,5,20)
+        rim_back_edge= pygame.Rect(back_glassboard)
         ball_rect=pygame.Rect(p[0] - round(ball_size/2) + 10, p[1] - round(ball_size/2) + 10, ball_size - 20, ball_size - 20)
         if p == collision_point:
             #bounce the ball off the walls
@@ -181,7 +188,7 @@ def process_path(path, velocity, collision_point, vx, vy):
             #bounce off the rim edge
             print("Rim Back Edge", "\t", (p[0], p[1]), "\t", -v[0]*1.1, "\t", v[1]*1.1)
             skip_next_rim_check=True
-            bounce_ball((p[0], p[1]), -v[0]*1.1, v[1]*1.1)
+            bounce_ball((p[0], p[1]), -v[0], v[1]*1.1)
             break
         elif rim.collidepoint((p[0],p[1])) and not skip_next_goal_check:
             print("Goal!!")
