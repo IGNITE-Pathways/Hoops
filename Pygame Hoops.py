@@ -24,6 +24,7 @@ lowdamp=0.95
 bounces=0
 g=9.8
 balls=[]
+score=0
 skip_next_rim_check=False
 skip_next_goal_check=False
 
@@ -32,6 +33,11 @@ starting_ball_pos=(bx+round(ball_size/2),by+round(ball_size/2))
 
 for i in range(1,36):
     balls.append(pygame.image.load(r'balls/ball_'+str(i)+'.png').convert_alpha())
+
+def show_text(msg, x, y, color, size):
+    fontobj = pygame.font.SysFont('freesans', size)
+    msgobj = fontobj.render(msg, False, color)
+    screen.blit(msgobj, (x, y))
 
 def get_path(ball_pos,vx,vy):
     path=[]
@@ -131,11 +137,13 @@ def reset_field(ball_pos,degree=0):
     # Floor 
     pygame.draw.rect(screen,(0,180,0),Rect(10,screenHeight - floor_height,screenWidth-20,15))
     # Rim Front Edge
+    show_text("Score: "+str(score),screenWidth/2-30,screenHeight-50,yellow,30)
+    # Score
     #pygame.draw.rect(screen,(green),Rect(hx-2,hy+5,10,20))
 
 # Render path
 def process_path(path, velocity, collision_point, vx, vy):
-    global skip_next_rim_check, skip_next_goal_check
+    global skip_next_rim_check, skip_next_goal_check, score
     #print("process_path", "\t", collision_point, "\t", vx, "\t", vy)
     for i in range(len(path)):
         time.sleep(.02)
@@ -163,6 +171,7 @@ def process_path(path, velocity, collision_point, vx, vy):
             break
         elif rim.collidepoint((p[0],p[1])) and not skip_next_goal_check:
             print("Goal!!")
+            score+=1
             time.sleep(0.1)
             # Make the ball fall down after hitting the goal
             skip_next_goal_check=True
