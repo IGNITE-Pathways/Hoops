@@ -34,6 +34,7 @@ skip_next_rim_check=False
 skip_next_goal_check=False
 front_rim=Rect(hx-2,hy+5,10,20)
 back_glassboard=Rect(screenWidth-55,hy-60,10,80)
+show_splash=True
 
 # Starting ball position
 starting_ball_pos=(bx+round(ball_size/2),by+round(ball_size/2))
@@ -129,6 +130,7 @@ lastPos=(0,0)
 
 # Rsets the field given the ball position
 def reset_field(ball_pos,degree=0):
+    global show_splash
     if degree<0 or degree>35:
         degree=0
     #screen.fill(black)
@@ -139,14 +141,17 @@ def reset_field(ball_pos,degree=0):
     pygame.Surface.set_colorkey (hoop_back, [0,0,0])
     screen.blit(hoop_back, (hx+2, hy+12))
     # Ball itself
-    pygame.Surface.set_colorkey (balls[degree], [0,0,0])
-    screen.blit(balls[degree], (ball_pos[0], ball_pos[1]))
+    if show_splash != True:
+        pygame.Surface.set_colorkey (balls[degree], [0,0,0])
+        screen.blit(balls[degree], (ball_pos[0], ball_pos[1]))
     # Front of the Hoop
     pygame.Surface.set_colorkey (hoop_front, [0,0,0])
     screen.blit(hoop_front, (hx, hy))
 
-    pygame.Surface.set_colorkey (p1, [0,0,0])
-    screen.blit(p1, (900, 80))
+    if show_splash:
+        pygame.Surface.set_colorkey (p1, [0,0,0])
+        screen.blit(p1, (900, 80))
+        show_splash=False
 
     # Floor 
     #pygame.draw.rect(screen,(0,180,0),Rect(10,screenHeight - floor_height,screenWidth-20,15))
@@ -226,13 +231,16 @@ while True:
                 pygame.quit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button==1:
-                    shoot=True
-                    lastPos=(event.pos[0],event.pos[1])
-                    endPos=(starting_ball_pos[0],starting_ball_pos[1])
-                    path, velocity, collision_point, vx, vy  = calc_trajectory(lastPos)
-                    for p in path:
-                        pygame.draw.circle(screen,(white),(p[0],p[1]),2)
-                        pygame.display.update()
+                    if show_splash:
+                        show_splash=False
+                    else:
+                        shoot=True
+                        lastPos=(event.pos[0],event.pos[1])
+                        endPos=(starting_ball_pos[0],starting_ball_pos[1])
+                        path, velocity, collision_point, vx, vy  = calc_trajectory(lastPos)
+                        for p in path:
+                            pygame.draw.circle(screen,(white),(p[0],p[1]),2)
+                            pygame.display.update()
             elif event.type == pygame.MOUSEMOTION:
                 if shoot:
                     degree=round(round(starting_ball_pos[0]%(34*3))/3)
@@ -243,10 +251,11 @@ while True:
                         pygame.draw.circle(screen,(white),(p[0],p[1]),2)
                         pygame.display.update()
             elif event.type == pygame.MOUSEBUTTONUP:
-                degree=round(round(starting_ball_pos[0]%(34*3))/3)
-                reset_field((starting_ball_pos[0]-round(ball_size/2),starting_ball_pos[1]-round(ball_size/2)),degree=degree)
-                if event.button==1:
-                    path, velocity, collision_point, vx, vy  = calc_trajectory(lastPos)
-                    process_path(path, velocity, collision_point, vx, vy)
-                    shoot=False
+                if shoot:
+                    degree=round(round(starting_ball_pos[0]%(34*3))/3)
+                    reset_field((starting_ball_pos[0]-round(ball_size/2),starting_ball_pos[1]-round(ball_size/2)),degree=degree)
+                    if event.button==1:
+                        path, velocity, collision_point, vx, vy  = calc_trajectory(lastPos)
+                        process_path(path, velocity, collision_point, vx, vy)
+                        shoot=False
     pygame.display.flip()
