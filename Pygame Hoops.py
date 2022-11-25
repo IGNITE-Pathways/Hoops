@@ -12,6 +12,8 @@ screen = pygame.display.set_mode((screenWidth, screenHeight))
 pygame.display.set_caption("Hoops")
 hoop_back = pygame.image.load(r'hoop_back.png').convert_alpha()
 hoop_front = pygame.image.load(r'hoop_front.png').convert_alpha()
+background = pygame.image.load(r'bg.png').convert_alpha()
+
 bx=400
 by=425
 hx=screenWidth-95
@@ -124,7 +126,8 @@ lastPos=(0,0)
 def reset_field(ball_pos,degree=0):
     if degree<0 or degree>35:
         degree=0
-    screen.fill(black)
+    #screen.fill(black)
+    screen.blit(background, (0,0))
     # Back Side of Hoop
     pygame.Surface.set_colorkey (hoop_back, [0,0,0])
     screen.blit(hoop_back, (hx+2, hy+12))
@@ -135,12 +138,15 @@ def reset_field(ball_pos,degree=0):
     pygame.Surface.set_colorkey (hoop_front, [0,0,0])
     screen.blit(hoop_front, (hx, hy))
     # Floor 
-    pygame.draw.rect(screen,(0,180,0),Rect(10,screenHeight - floor_height,screenWidth-20,15))
-    # Rim Front Edge
-    show_text("Score: "+str(score),screenWidth/2-40,screenHeight-60,yellow,30)
-    # Rim front edge
+    #pygame.draw.rect(screen,(0,180,0),Rect(10,screenHeight - floor_height,screenWidth-20,15))
+    # Score
+    show_text("Score: "+str(score),screenWidth/2-50,25,blue,30)
+    # Rim Front edge
     pygame.draw.rect(screen,(green),Rect(hx-2,hy+5,5,10))
+    # Rim Back Edge 
     pygame.draw.rect(screen,(green),Rect(screenWidth-10,hy+18,5,20))
+    # Rim
+    pygame.draw.rect(screen, (blue),Rect(hx+5,hy+10,70,50))
 
 # Render path
 def process_path(path, velocity, collision_point, vx, vy):
