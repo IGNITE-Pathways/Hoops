@@ -15,6 +15,7 @@ hoop_front = pygame.image.load(r'hoop_front.png').convert_alpha()
 background = pygame.image.load(r'bg.png').convert_alpha()
 background = pygame.image.load(r'bg.png').convert_alpha()
 glassboard = pygame.image.load(r'glassboard.png').convert_alpha()
+p1 = pygame.image.load(r'p1.png').convert_alpha()
 
 bx=400
 by=425
@@ -143,6 +144,10 @@ def reset_field(ball_pos,degree=0):
     # Front of the Hoop
     pygame.Surface.set_colorkey (hoop_front, [0,0,0])
     screen.blit(hoop_front, (hx, hy))
+
+    pygame.Surface.set_colorkey (p1, [0,0,0])
+    screen.blit(p1, (900, 80))
+
     # Floor 
     #pygame.draw.rect(screen,(0,180,0),Rect(10,screenHeight - floor_height,screenWidth-20,15))
     # Score
