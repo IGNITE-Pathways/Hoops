@@ -82,7 +82,7 @@ def get_path(ball_pos,vx,vy):
             else:
                 vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*lowdamp
             break
-        elif (y + ball_size/2 >= screenHeight - floor_height + 5):
+        elif (y + ball_size/2 >= screenHeight - floor_height):
             #Hitting Floor 
             vfx = vx*lowdamp
             vfy = -math.sqrt((vy*vy)+(2*g*height_gained))*highdamp
@@ -137,9 +137,10 @@ def reset_field(ball_pos,degree=0):
     # Floor 
     pygame.draw.rect(screen,(0,180,0),Rect(10,screenHeight - floor_height,screenWidth-20,15))
     # Rim Front Edge
-    show_text("Score: "+str(score),screenWidth/2-30,screenHeight-50,yellow,30)
-    # Score
-    #pygame.draw.rect(screen,(green),Rect(hx-2,hy+5,10,20))
+    show_text("Score: "+str(score),screenWidth/2-40,screenHeight-60,yellow,30)
+    # Rim front edge
+    pygame.draw.rect(screen,(green),Rect(hx-2,hy+5,5,10))
+    pygame.draw.rect(screen,(green),Rect(screenWidth-10,hy+18,5,20))
 
 # Render path
 def process_path(path, velocity, collision_point, vx, vy):
@@ -157,7 +158,8 @@ def process_path(path, velocity, collision_point, vx, vy):
         pygame.display.update() 
         rim = pygame.Rect(hx,hy+10,95,50)
         rim_front_edge= pygame.Rect(hx-2,hy+5,5,10)
-        ball_rect=pygame.Rect(p[0] - round(ball_size/2) + 5, p[1] - round(ball_size/2) + 5, ball_size - 10, ball_size - 10)
+        rim_back_edge= pygame.Rect(screenWidth-10,hy+18,5,20)
+        ball_rect=pygame.Rect(p[0] - round(ball_size/2) + 10, p[1] - round(ball_size/2) + 10, ball_size - 20, ball_size - 20)
         if p == collision_point:
             #bounce the ball off the walls
             skip_next_rim_check=False
@@ -165,7 +167,13 @@ def process_path(path, velocity, collision_point, vx, vy):
             bounce_ball(collision_point, vx, vy)
         elif rim_front_edge.colliderect(ball_rect) and not skip_next_rim_check:
             #bounce off the rim edge
-            print("Rim Edge", "\t", (p[0], p[1]), "\t", -v[0]*1.1, "\t", v[1]*1.1)
+            print("Rim Front Edge", "\t", (p[0], p[1]), "\t", -v[0]*1.1, "\t", v[1]*1.1)
+            skip_next_rim_check=True
+            bounce_ball((p[0], p[1]), -v[0]*1.1, v[1]*1.1)
+            break
+        elif rim_back_edge.colliderect(ball_rect) and not skip_next_rim_check:
+            #bounce off the rim edge
+            print("Rim Back Edge", "\t", (p[0], p[1]), "\t", -v[0]*1.1, "\t", v[1]*1.1)
             skip_next_rim_check=True
             bounce_ball((p[0], p[1]), -v[0]*1.1, v[1]*1.1)
             break
