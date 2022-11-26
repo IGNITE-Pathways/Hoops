@@ -14,7 +14,7 @@ hoop_back = pygame.image.load(r'hoop_back.png').convert_alpha()
 hoop_front = pygame.image.load(r'hoop_front.png').convert_alpha()
 background = pygame.image.load(r'backgrounds/bg.png').convert_alpha()
 glassboard = pygame.image.load(r'glassboard.png').convert_alpha()
-p1 = pygame.image.load(r'players/player_7.png').convert_alpha()
+player = pygame.image.load(r'players/player_'+str(random.randint(1,7))+'.png').convert_alpha()
 
 bx=400
 by=425
@@ -149,8 +149,8 @@ def reset_field(ball_pos,degree=0):
 
     if show_splash:
         show_text("Hoops",screenWidth/2 - 140,200,yellow,100)
-        pygame.Surface.set_colorkey (p1, [0,0,0])
-        screen.blit(p1, (900, 80))
+        pygame.Surface.set_colorkey (player, [0,0,0])
+        screen.blit(player, (850, 220))
 
     # Floor 
     #pygame.draw.rect(screen,(0,180,0),Rect(10,screenHeight - floor_height,screenWidth-20,15))
