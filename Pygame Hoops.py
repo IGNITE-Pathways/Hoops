@@ -15,7 +15,7 @@ hoop_front = pygame.image.load(r'hoop_front.png').convert_alpha()
 background = pygame.image.load(r'bg.png').convert_alpha()
 background = pygame.image.load(r'bg.png').convert_alpha()
 glassboard = pygame.image.load(r'glassboard.png').convert_alpha()
-p1 = pygame.image.load(r'p1.png').convert_alpha()
+p1 = pygame.image.load(r'players/player_7.png').convert_alpha()
 
 bx=400
 by=425
