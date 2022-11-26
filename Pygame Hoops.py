@@ -33,7 +33,7 @@ score=0
 skip_next_rim_check=False
 skip_next_goal_check=False
 front_rim=Rect(hx-2,hy+5,10,20)
-back_glassboard=Rect(screenWidth-55,hy-60,10,80)
+back_glassboard=Rect(screenWidth-55,hy-60,10,100)
 show_splash=True
 
 # Starting ball position
@@ -149,9 +149,9 @@ def reset_field(ball_pos,degree=0):
     screen.blit(hoop_front, (hx, hy))
 
     if show_splash:
+        show_text("Hoops",screenWidth/2 - 140,200,yellow,100)
         pygame.Surface.set_colorkey (p1, [0,0,0])
         screen.blit(p1, (900, 80))
-        show_splash=False
 
     # Floor 
     #pygame.draw.rect(screen,(0,180,0),Rect(10,screenHeight - floor_height,screenWidth-20,15))
@@ -178,7 +178,8 @@ def process_path(path, velocity, collision_point, vx, vy):
         degree=round(round(p[0]%(34*3))/3)
         reset_field((p[0]-round(ball_size/2),p[1]-round(ball_size/2)),degree=degree)
         pygame.display.update() 
-        rim = pygame.Rect(hx,hy+10,95,50)
+        rim = pygame.Rect(hx,hy+10,95,40)
+        rim1 = pygame.Rect(hx,hy+25,5,35)
         rim_front_edge= pygame.Rect(front_rim)
         #rim_back_edge= pygame.Rect(screenWidth-10,hy+18,5,20)
         rim_back_edge= pygame.Rect(back_glassboard)
@@ -198,16 +199,22 @@ def process_path(path, velocity, collision_point, vx, vy):
             #bounce off the rim edge
             print("Rim Back Edge", "\t", (p[0], p[1]), "\t", -v[0]*1.1, "\t", v[1]*1.1)
             skip_next_rim_check=True
-            bounce_ball((p[0], p[1]), -v[0], v[1]*1.1)
+            bounce_ball((p[0], p[1]), -v[0]*0.9, v[1]*1.1)
             break
+        elif rim1.colliderect(ball_rect):
+            skip_next_goal_check = True
+            continue # skip goal check 
         elif rim.collidepoint((p[0],p[1])) and not skip_next_goal_check:
-            print("Goal!!")
-            score+=1
-            time.sleep(0.1)
-            # Make the ball fall down after hitting the goal
-            skip_next_goal_check=True
-            bounce_ball((p[0], p[1]), v[0]/abs(v[0]), abs(v[1]*highdamp))
-            break
+            if v[1] < 0:
+                print("Ball moving upwaerd in goal")
+            else:
+                print("Goal!!")
+                score+=1
+                time.sleep(0.1)
+                # Make the ball fall down after hitting the goal
+                skip_next_goal_check=True
+                bounce_ball((p[0], p[1]), v[0]/abs(v[0]), abs(v[1]*highdamp))
+                break
 
 # Recursive function that bounces the ball off the walls
 def bounce_ball(start_pos, vx, vy):
@@ -230,10 +237,13 @@ while True:
             if event.type == pygame.QUIT:
                 pygame.quit()
             if event.type == pygame.MOUSEBUTTONDOWN:
+                #print("Mouse Down", show_splash)
                 if event.button==1:
                     if show_splash:
                         show_splash=False
+                        reset_field((starting_ball_pos[0]-round(ball_size/2),starting_ball_pos[1]-round(ball_size/2)))
                     else:
+                        #print("Shoot True")
                         shoot=True
                         lastPos=(event.pos[0],event.pos[1])
                         endPos=(starting_ball_pos[0],starting_ball_pos[1])
@@ -243,6 +253,7 @@ while True:
                             pygame.display.update()
             elif event.type == pygame.MOUSEMOTION:
                 if shoot:
+                    #print("Mouse Move", show_splash)
                     degree=round(round(starting_ball_pos[0]%(34*3))/3)
                     reset_field((starting_ball_pos[0]-round(ball_size/2),starting_ball_pos[1]-round(ball_size/2)),degree=degree)
                     lastPos=(event.pos[0],event.pos[1])
@@ -252,6 +263,7 @@ while True:
                         pygame.display.update()
             elif event.type == pygame.MOUSEBUTTONUP:
                 if shoot:
+                    #print("Mouse Up", show_splash)
                     degree=round(round(starting_ball_pos[0]%(34*3))/3)
                     reset_field((starting_ball_pos[0]-round(ball_size/2),starting_ball_pos[1]-round(ball_size/2)),degree=degree)
                     if event.button==1:
