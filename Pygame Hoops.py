@@ -41,9 +41,10 @@ starting_ball_pos=(bx+round(ball_size/2),by+round(ball_size/2))
 for i in range(1,36):
     balls.append(pygame.image.load(r'balls/ball_'+str(i)+'.png').convert_alpha())
 
-def show_text(msg, x, y, color, size):
-    fontobj = pygame.font.SysFont('freesans', size)
-    msgobj = fontobj.render(msg, False, color)
+def show_score(msg, x, y, color, size):
+    tin = pygame.font.Font('font/IndianPoker.ttf', size)
+    fontobj = pygame.font.SysFont('oswald', size)
+    msgobj = tin.render(msg, False, color)
     screen.blit(msgobj, (x, y))
 
 def get_path(ball_pos,vx,vy):
@@ -148,14 +149,17 @@ def reset_field(ball_pos,degree=0):
     screen.blit(hoop_front, (hx, hy))
 
     if show_splash:
-        show_text("Hoops",screenWidth/2 - 140,200,yellow,100)
+        show_score("Hoops",screenWidth/2 - 140,200,yellow,100)
         pygame.Surface.set_colorkey (player, [0,0,0])
         screen.blit(player, (850, 220))
 
-    # Floor 
-    #pygame.draw.rect(screen,(0,180,0),Rect(10,screenHeight - floor_height,screenWidth-20,15))
+    # Score Bar 
+    score_bar = pygame.Surface((screenWidth,40), pygame.SRCALPHA) 
+    score_bar.fill((255,255,255,64))  
+    screen.blit(score_bar, (0,0))
+    # pygame.draw.rect(screen,(100,100,100,128),Rect(0,0,screenWidth,20))
     # Score
-    show_text("Score: "+str(score),screenWidth/2-50,25,blue,30)
+    show_score("Score: "+str(score),screenWidth/2-50,5,white,25)
     # Rim Front edge
     #pygame.draw.rect(screen,(green),front_rim)
     # Rim Back Edge 
