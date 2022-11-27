@@ -12,7 +12,7 @@ BLACK = (0,0,0)
 GREY  = (50,50,50)
 RED  = (207,0,0)
 
-class Control:
+class Hoops:
     def __init__(self):
         self.hoop_back = pygame.image.load(r'hoop_back.png').convert_alpha()
         self.hoop_front = pygame.image.load(r'hoop_front.png').convert_alpha()
@@ -27,8 +27,7 @@ class Control:
         self.lowdamp=0.95
         self.bounces=0
         self.g=9.8
-        self.bx=400
-        self.by=425
+   
         self.balls=[]
         self.score=0
         self.font = pygame.font.Font('font/CoffeeTin.ttf',150)
@@ -45,6 +44,10 @@ class Control:
         self.start_up_init()
 
     def start_up_init(self):
+        self.bx=(400/1400)*WIDTH
+        self.by=HEIGHT-400
+        # Starting ball position
+        self.starting_ball_pos=(self.bx+round(self.ball_size/2),self.by+round(self.ball_size/2))
         self.background = pygame.transform.scale(self.background, (WIDTH,HEIGHT))
 
         #intitialize items for the startup section of the game
@@ -55,7 +58,6 @@ class Control:
         self.front_rim=Rect(self.hx-2,self.hy+5,10,20)
         self.back_glassboard=Rect(WIDTH-55,self.hy-60,10,100)
         self.swish=True
-        self.shootpoint=(self.bx,self.by)
 
         self.startLoc = (WIDTH/2 - self.startSize[0]/2, self.buffer)
 
@@ -65,9 +67,6 @@ class Control:
 
         self.buttonRect = pygame.Rect(self.buttonLoc, self.buttonSize)
         self.buttonRectOutline = pygame.Rect(self.buttonLoc, self.buttonSize)
-
-        # Starting ball position
-        self.starting_ball_pos=(self.bx+round(self.ball_size/2),self.by+round(self.ball_size/2))
 
         self.state = 0
 
@@ -102,7 +101,10 @@ class Control:
             vertex_x = ball_pos[0] - vx*(vy/self.g)
             vertex_y = ball_pos[1]-((0.5*vy*vy)/self.g)
             vfx = vx
-            vfy = math.sqrt((vy*vy)+(2*self.g*height_gained)) * (vy/abs(vy))
+            if vy==0:
+                vfy = math.sqrt(abs((vy*vy)+(2*self.g*height_gained)))
+            else:
+                vfy = math.sqrt(abs((vy*vy)+(2*self.g*height_gained))) * (vy/abs(vy))
             if vy < 0:
                 #Ball moving upward so will go through vertex
                 if (x + ball_pos[0])*(vx/abs(vx)) > vertex_x*(vx/abs(vx)):
@@ -165,7 +167,7 @@ class Control:
         return self.get_path(self.starting_ball_pos,speed * math.cos(angle),speed * math.sin(angle))
 
 
-    # Rsets the field given the ball position
+    # Resets the field given the ball position
     def reset_field(self, ball_pos,degree=0, splash=False):
         if degree<0 or degree>35:
             degree=0
@@ -176,7 +178,7 @@ class Control:
         # Back Side of Hoop
         pygame.Surface.set_colorkey (self.hoop_back, [0,0,0])
         SCREEN.blit(self.hoop_back, (self.hx+2, self.hy+12))
-        # Ball itself
+        # Ball Itself
         if splash != True:
             pygame.Surface.set_colorkey (self.balls[degree], [0,0,0])
             SCREEN.blit(self.balls[degree], (ball_pos[0], ball_pos[1]))
@@ -249,8 +251,8 @@ class Control:
                         print("Swish !!")
                     else:
                         print("Goal !!")
-                    #print("x",self.shootpoint[0])
-                    if self.shootpoint[0]<240:
+                    #print("x",self.starting_ball_pos[0])
+                    if self.starting_ball_pos[0]<240:
                         self.score+=3
                     else:
                         self.score+=2
@@ -300,7 +302,7 @@ class Control:
         #draw welcome text
         SCREEN.blit(self.startText, self.startLoc)
         pygame.Surface.set_colorkey (self.player, [0,0,0])
-        SCREEN.blit(self.player, (850, 220))
+        SCREEN.blit(self.player, ((850/1400)*WIDTH, HEIGHT-580))
 
         #draw the start button
         pygame.draw.rect(SCREEN, RED, self.buttonRect)
@@ -313,7 +315,8 @@ class Control:
     def play_init(self):
         #create the new variables
         self.round = 0
-        self.reset_field((self.starting_ball_pos[0]-round(self.ball_size/2),self.starting_ball_pos[1]-round(self.ball_size/2)), splash=False)
+        degree=round(round(self.starting_ball_pos[0]%(34*3))/3)
+        self.reset_field((self.starting_ball_pos[0]-round(self.ball_size/2),self.starting_ball_pos[1]-round(self.ball_size/2)),degree=degree, splash=False)
 
     def play(self):
         for event in pygame.event.get():
@@ -323,12 +326,16 @@ class Control:
                     print(event.pos)
                     if event.button==1:
                         self.shoot=True
-                        self.shootpoint=event.pos
                         self.lastPos=(event.pos[0],event.pos[1])
                         path, velocity, collision_point, vx, vy  = self.calc_trajectory(self.lastPos)
                         for p in path:
                             pygame.draw.circle(SCREEN,(white),(p[0],p[1]),2)
                             pygame.display.update()
+                    elif event.button==3:
+                        self.shoot=False
+                        self.starting_ball_pos=event.pos
+                        degree=round(round(self.starting_ball_pos[0]%(34*3))/3)
+                        self.reset_field((self.starting_ball_pos[0]-round(self.ball_size/2),self.starting_ball_pos[1]-round(self.ball_size/2)),degree=degree)
                 elif event.type == pygame.MOUSEMOTION:
                     if self.shoot:
                         degree=round(round(self.starting_ball_pos[0]%(34*3))/3)
@@ -355,7 +362,7 @@ if __name__ == "__main__":
 	pygame.init()
 	pygame.display.set_caption("Hoops")
 	SCREEN = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
-	Runit = Control()
+	Runit = Hoops()
 	Myclock = pygame.time.Clock()
 	while 1:
 		Runit.main()
