@@ -16,9 +16,19 @@ RED  = (207,0,0)
 class Display(Enum):
     SPLASH = 1
     PLAY = 2
-    SETTINGS = 3
-    RESULTS = 4
-    DEBUG = 5
+    RESULTS = 3
+
+#Gravity in m/s²
+class Celestial(Enum):
+    MERCURY = 3.7
+    VENUS = 8.87
+    EARTH = 9.807
+    MARS = 3.721
+    JUPITER = 24.79
+    SATURN = 11.44
+    NEPTUNE = 11.15
+    MOON = 1.62
+    SUN = 274
 
 class Hoops:
     def __init__(self):
@@ -32,6 +42,7 @@ class Hoops:
         self.background = pygame.image.load(r'backgrounds/bg.png').convert_alpha()
         self.glassboard = pygame.image.load(r'glassboard.png').convert_alpha()
         self.gear = pygame.image.load(r'gear.png').convert_alpha()
+        self.debug = pygame.image.load(r'debug.png').convert_alpha()
         
         self.player = pygame.image.load(r'players/player_'+str(random.randint(1,7))+'.png').convert_alpha()
         self.font = pygame.font.Font('font/CoffeeTin.ttf',150)
@@ -43,9 +54,10 @@ class Hoops:
 
         self.shoot=False
         self.bounces=0
-        #Earth
-        self.gravity=9.8   
+        self.celestialBody = Celestial.EARTH
         self.score=0
+        self.settingsOverlay = False
+        self.debugEnabled = False
 
         self.startText = self.font2.render("Welcome to Hoops!", 1, (yellow))
         self.startSize = self.font2.size("Welcome to Hoops!")
@@ -57,6 +69,7 @@ class Hoops:
         self.bx=(400/1400)*WIDTH
         self.by=HEIGHT-400
         self.floor_height=(80/800)*HEIGHT
+        self.gravity = self.celestialBody.value
 
         # Starting ball position
         self.starting_ball_pos=(self.bx+round(self.ball_size/2),self.by+round(self.ball_size/2))
@@ -68,7 +81,7 @@ class Hoops:
         self.skip_next_rim_check=False
         self.skip_next_goal_check=False
         self.front_rim=Rect(self.hx-2,self.hy,10,25)
-        self.back_glassboard=Rect(WIDTH-55,self.hy-60,10,100)
+        self.back_glassboard=Rect(WIDTH-55,self.hy-60,10,120)
         self.swish=True
 
         self.startLoc = (WIDTH/2 - self.startSize[0]/2, self.buffer)
@@ -80,8 +93,12 @@ class Hoops:
         self.startButtonRectOutline = pygame.Rect(self.startButtonLoc, self.startButtonSize)
 
         self.gearButtonSize = (self.gear.get_width(), self.gear.get_height())
-        self.gearButtonLoc = (WIDTH - 35, 5)
+        self.gearButtonLoc = (WIDTH - 40, 5)
         self.gearButtonRect = pygame.Rect(self.gearButtonLoc, self.gearButtonSize)
+
+        self.debugButtonSize = (self.debug.get_width(), self.debug.get_height())
+        self.debugButtonLoc = (WIDTH - 80, 5)
+        self.debugButtonRect = pygame.Rect(self.debugButtonLoc, self.debugButtonSize)
 
         self.state = 0
 
@@ -90,8 +107,8 @@ class Hoops:
             self.show_splash_screen()
         elif self.state == 1:
             self.play()
-        elif self.state == 2:
-             self.settings()
+        # elif self.state == 2:
+        #      self.results()
         # elif self.state == 3:
         #     self.new_game()
 
@@ -119,24 +136,39 @@ class Hoops:
         score_bar.fill((255,255,255,32))  
         # self.show_score(score_bar, "Score: "+str(self.score),WIDTH/2-50,5,white,25)
         tin = pygame.font.Font('font/IndianPoker.ttf', 25)
+        score_bar.blit(tin.render(self.celestialBody.name, False, white), (10, 5))
         score_bar.blit(tin.render("Score: "+str(self.score), False, white), (WIDTH/2-50, 5))
-        score_bar.blit(self.gear, (WIDTH-35, 5))
+        score_bar.blit(self.gear, self.gearButtonLoc)
+        score_bar.blit(self.debug, self.debugButtonLoc)
         SCREEN.blit(score_bar, (0,0))
         # Score
-        
-        if display==Display.DEBUG:
+
+        if display==Display.SPLASH:
+            #draw welcome text
+            SCREEN.blit(self.startText, self.startLoc)
+            pygame.Surface.set_colorkey (self.player, [0,0,0])
+            SCREEN.blit(self.player, ((850/1400)*WIDTH, HEIGHT-580))
+
+            #draw the start button
+            pygame.draw.rect(SCREEN, RED, self.startButtonRect)
+            pygame.draw.rect(SCREEN, BLACK, self.startButtonRectOutline, 2)
+            SCREEN.blit(self.startButton, self.startButtonLoc)
+
+        if self.debugEnabled:
             # Rim Front edge
             pygame.draw.rect(SCREEN,(green),self.front_rim)
             # Rim Back Edge 
             pygame.draw.rect(SCREEN,(green),self.back_glassboard)
             # Rim
             pygame.draw.rect(SCREEN, (blue),Rect(self.hx+5,self.hy+10,70,50))
+            # Rim1
+            pygame.draw.rect(SCREEN, (yellow),Rect(self.hx,self.hy+25,5,35))
 
-        if display==Display.SETTINGS:
-             settings_pane = pygame.Surface((WIDTH/2,HEIGHT/2), pygame.SRCALPHA) 
-             settings_pane.fill((255,255,255,32))  
-
-             SCREEN.blit(settings_pane, (WIDTH/4,HEIGHT/4))
+        if self.settingsOverlay:
+            settings_pane = pygame.Surface((WIDTH/2,HEIGHT/2), pygame.SRCALPHA) 
+            settings_pane.fill((0,0,0,200))  
+            settings_pane.blit(tin.render("Celestial Body: ", False, white), (20, 40))
+            SCREEN.blit(settings_pane, (WIDTH/4,HEIGHT/4))
 
 
     def show_score(self, msg, x, y, color, size):
@@ -242,7 +274,6 @@ class Hoops:
             rim = pygame.Rect(self.hx,self.hy+4,95,40)
             rim1 = pygame.Rect(self.hx,self.hy+25,5,35)
             rim_front_edge= pygame.Rect(self.front_rim)
-            #rim_back_edge= pygame.Rect(WIDTH-10,hy+18,5,20)
             rim_back_edge= pygame.Rect(self.back_glassboard)
             ball_rect=pygame.Rect(p[0] - round(self.ball_size/2) + 10, p[1] - round(self.ball_size/2) + 10, self.ball_size - 20, self.ball_size - 20)
             if p == collision_point:
@@ -253,14 +284,16 @@ class Hoops:
                 self.bounce_ball(collision_point, vx, vy)
             elif rim_front_edge.colliderect(ball_rect) and not self.skip_next_rim_check:
                 #bounce off the rim edge
-                print("Rim Front Edge", "\t", (p[0], p[1]), "\t", -v[0]*1.1, "\t", v[1]*1.1)
+                if self.debugEnabled:
+                    print("Rim Front Edge", "\t", (p[0], p[1]), "\t", -v[0]*1.1, "\t", v[1]*1.1)
                 self.skip_next_rim_check=True
                 self.swish=False
                 self.bounce_ball((p[0], p[1]), -v[0]*1.1, v[1]*1.1)
                 break
             elif rim_back_edge.colliderect(ball_rect) and not self.skip_next_rim_check:
                 #bounce off the rim edge
-                print("Rim Back Edge", "\t", (p[0], p[1]), "\t", -v[0]*1.1, "\t", v[1]*1.1)
+                if self.debugEnabled:
+                    print("Rim Back Edge", "\t", (p[0], p[1]), "\t", -v[0]*1.1, "\t", v[1]*1.1)
                 self.skip_next_rim_check=True
                 self.swish=False
                 self.bounce_ball((p[0], p[1]), -v[0]*0.8, v[1]*1.2)
@@ -325,52 +358,43 @@ class Hoops:
                             self.play_init()
                             return
                         elif mouseRect.colliderect(self.gearButtonRect):
-                            self.state = 2
-                            self.settings()
+                            self.settingsOverlay = not self.settingsOverlay
+                            return
+                        elif mouseRect.colliderect(self.debugButtonRect):
+                            self.debugEnabled = not self.debugEnabled
                             return
 
             # Main Program -- Start --- 
             self.reset_field((self.starting_ball_pos[0]-round(self.ball_size/2),self.starting_ball_pos[1]-round(self.ball_size/2)), display=Display.SPLASH)
-
-            #draw welcome text
-            SCREEN.blit(self.startText, self.startLoc)
-            pygame.Surface.set_colorkey (self.player, [0,0,0])
-            SCREEN.blit(self.player, ((850/1400)*WIDTH, HEIGHT-580))
-
-            #draw the start button
-            pygame.draw.rect(SCREEN, RED, self.startButtonRect)
-            pygame.draw.rect(SCREEN, BLACK, self.startButtonRectOutline, 2)
-            SCREEN.blit(self.startButton, self.startButtonLoc)
-    
             pygame.display.flip()
 
-    def settings(self):
-            global SCREEN, WIDTH, HEIGHT
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit(); sys.exit()
-                if event.type == pygame.VIDEORESIZE:
-                    SCREEN = pygame.display.set_mode((event.w, event.h),pygame.RESIZABLE)
-                    WIDTH=event.w
-                    HEIGHT=event.h
-                    self.start_up_init()
-                #when the user clicks the start button, change to the playing state
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if event.button == 1:
-                        mouseRect = pygame.Rect(event.pos, (1,1))
-                        if mouseRect.colliderect(self.startButtonRect):
-                            self.state += 1
-                            self.play_init()
-                            return
-                        elif mouseRect.colliderect(self.gearButtonRect):
-                            self.state = 1
-                            self.play_init()
-                            return
+    # def settings(self):
+    #         global SCREEN, WIDTH, HEIGHT
+    #         for event in pygame.event.get():
+    #             if event.type == pygame.QUIT:
+    #                 pygame.quit(); sys.exit()
+    #             if event.type == pygame.VIDEORESIZE:
+    #                 SCREEN = pygame.display.set_mode((event.w, event.h),pygame.RESIZABLE)
+    #                 WIDTH=event.w
+    #                 HEIGHT=event.h
+    #                 self.start_up_init()
+    #             #when the user clicks the start button, change to the playing state
+    #             elif event.type == pygame.MOUSEBUTTONDOWN:
+    #                 if event.button == 1:
+    #                     mouseRect = pygame.Rect(event.pos, (1,1))
+    #                     if mouseRect.colliderect(self.startButtonRect):
+    #                         self.state += 1
+    #                         self.play_init()
+    #                         return
+    #                     elif mouseRect.colliderect(self.gearButtonRect):
+    #                         self.state = 1
+    #                         self.play_init()
+    #                         return
 
-            # Main Program -- Start --- 
-            self.reset_field((self.starting_ball_pos[0]-round(self.ball_size/2),self.starting_ball_pos[1]-round(self.ball_size/2)), display=Display.SETTINGS)
+    #         # Main Program -- Start --- 
+    #         self.reset_field((self.starting_ball_pos[0]-round(self.ball_size/2),self.starting_ball_pos[1]-round(self.ball_size/2)), display=Display.SETTINGS)
         
-            pygame.display.flip()
+    #         pygame.display.flip()
 
 
     def play_init(self):
@@ -384,23 +408,25 @@ class Hoops:
                 if event.type == pygame.QUIT:
                     pygame.quit(); sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    print(event.pos)
+                    if self.debugEnabled:
+                        print("MOUSEBUTTONDOWN",event.pos)
                     if event.button==1:
                         if self.gearButtonRect.collidepoint(event.pos):
-                            self.state = 2
-                            self.settings()
-                            return
-                        self.shoot=True
-                        self.lastPos=(event.pos[0],event.pos[1])
-                        path, velocity, collision_point, vx, vy  = self.calc_trajectory(self.lastPos)
-                        for p in path:
-                            pygame.draw.circle(SCREEN,(white),(p[0],p[1]),2)
-                            pygame.display.update()
+                            self.settingsOverlay = not self.settingsOverlay
+                        elif self.debugButtonRect.collidepoint(event.pos):
+                            self.debugEnabled = not self.debugEnabled
+                        else:
+                            self.shoot=True
+                            self.lastPos=(event.pos[0],event.pos[1])
+                            path, velocity, collision_point, vx, vy  = self.calc_trajectory(self.lastPos)
+                            for p in path:
+                                pygame.draw.circle(SCREEN,(white),(p[0],p[1]),2)
+                                pygame.display.update()
                     elif event.button==3:
                         self.shoot=False
                         self.starting_ball_pos=event.pos
-                        degree=round(round(self.starting_ball_pos[0]%(34*3))/3)
-                        self.reset_field((self.starting_ball_pos[0]-round(self.ball_size/2),self.starting_ball_pos[1]-round(self.ball_size/2)),degree=degree)
+                    degree=round(round(self.starting_ball_pos[0]%(34*3))/3)
+                    self.reset_field((self.starting_ball_pos[0]-round(self.ball_size/2),self.starting_ball_pos[1]-round(self.ball_size/2)),degree=degree)
                 elif event.type == pygame.MOUSEMOTION:
                     if self.shoot:
                         degree=round(round(self.starting_ball_pos[0]%(34*3))/3)
