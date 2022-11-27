@@ -3,8 +3,8 @@ import os, sys, pygame, math, numpy, time, random
 from pygame.locals import *
 
 # Initialize Global Variables 
-WIDTH = 1400
-HEIGHT = 800
+WIDTH = 1500
+HEIGHT = 900
 
 #Global constants here
 BLACK = (255,255,255)
@@ -20,14 +20,6 @@ class Control:
         self.glassboard = pygame.image.load(r'glassboard.png').convert_alpha()
         self.player = pygame.image.load(r'players/player_'+str(random.randint(1,7))+'.png').convert_alpha()
         self.buffer = 100
-        self.start_up_init()
-
-    def start_up_init(self):
-        #intitialize items for the startup section of the game
-        self.bx=400
-        self.by=425
-        self.hx=WIDTH-140
-        self.hy=250
         self.ball_size=70
         self.floor_height=80
         self.shoot=False
@@ -35,20 +27,35 @@ class Control:
         self.lowdamp=0.95
         self.bounces=0
         self.g=9.8
+        self.bx=400
+        self.by=425
         self.balls=[]
         self.score=0
-        self.skip_next_rim_check=False
-        self.skip_next_goal_check=False
-        self.front_rim=Rect(self.hx-2,self.hy+5,10,20)
-        self.back_glassboard=Rect(WIDTH-55,self.hy-60,10,100)
-        self.swish=True
-
         self.font = pygame.font.Font('font/CoffeeTin.ttf',150)
         self.font2 = pygame.font.Font('font/IndianPoker.ttf', 75)
         self.font2.set_bold(True)
 
         self.startText = self.font2.render("Welcome to Hoops!", 1, (yellow))
         self.startSize = self.font2.size("Welcome to Hoops!")
+        # Initialize last position on grid user clicked
+        self.lastPos=(0,0)
+
+        for i in range(1,36):
+            self.balls.append(pygame.image.load(r'balls/ball_'+str(i)+'.png').convert_alpha())
+        self.start_up_init()
+
+    def start_up_init(self):
+        self.background = pygame.transform.scale(self.background, (WIDTH,HEIGHT))
+
+        #intitialize items for the startup section of the game
+        self.hx=WIDTH-140
+        self.hy=250
+        self.skip_next_rim_check=False
+        self.skip_next_goal_check=False
+        self.front_rim=Rect(self.hx-2,self.hy+5,10,20)
+        self.back_glassboard=Rect(WIDTH-55,self.hy-60,10,100)
+        self.swish=True
+        self.shootpoint=(self.bx,self.by)
 
         self.startLoc = (WIDTH/2 - self.startSize[0]/2, self.buffer)
 
@@ -62,18 +69,11 @@ class Control:
         # Starting ball position
         self.starting_ball_pos=(self.bx+round(self.ball_size/2),self.by+round(self.ball_size/2))
 
-        # Initialize last position on grid user clicked
-        self.lastPos=(0,0)
-
-
-        for i in range(1,36):
-            self.balls.append(pygame.image.load(r'balls/ball_'+str(i)+'.png').convert_alpha())
-        
         self.state = 0
 
     def main(self):
         if self.state == 0:
-            self.start_up()
+            self.show_splash_screen()
         elif self.state == 1:
             self.play()
         # elif self.state == 2:
@@ -243,13 +243,17 @@ class Control:
                 continue # skip goal check 
             elif rim.collidepoint((p[0],p[1])) and not self.skip_next_goal_check:
                 if v[1] < 0:
-                    print("Ball moving upwaerd in goal")
+                    print("Ball moving upward in goal")
                 else:
                     if self.swish:
                         print("Swish !!")
                     else:
                         print("Goal !!")
-                    self.score+=1
+                    #print("x",self.shootpoint[0])
+                    if self.shootpoint[0]<240:
+                        self.score+=3
+                    else:
+                        self.score+=2
                     self.swish=True #reset
                     time.sleep(0.1)
                     # Make the ball fall down after hitting the goal
@@ -271,11 +275,16 @@ class Control:
         else:
             self.process_path(path, velocity, collision_point, vx, vy)
 
-    def start_up(self):
+    def show_splash_screen(self):
+        global SCREEN, WIDTH, HEIGHT
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit(); sys.exit()
-
+            if event.type == pygame.VIDEORESIZE:
+                SCREEN = pygame.display.set_mode((event.w, event.h),pygame.RESIZABLE)
+                WIDTH=event.w
+                HEIGHT=event.h
+                self.start_up_init()
             #when the user clicks the start button, change to the playing state
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
@@ -311,16 +320,16 @@ class Control:
                 if event.type == pygame.QUIT:
                     pygame.quit(); sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    #print("Mouse Down")
+                    print(event.pos)
                     if event.button==1:
                         self.shoot=True
+                        self.shootpoint=event.pos
                         self.lastPos=(event.pos[0],event.pos[1])
                         path, velocity, collision_point, vx, vy  = self.calc_trajectory(self.lastPos)
                         for p in path:
                             pygame.draw.circle(SCREEN,(white),(p[0],p[1]),2)
                             pygame.display.update()
                 elif event.type == pygame.MOUSEMOTION:
-                    # print("Mouse Move", event.pos)
                     if self.shoot:
                         degree=round(round(self.starting_ball_pos[0]%(34*3))/3)
                         self.reset_field((self.starting_ball_pos[0]-round(self.ball_size/2),self.starting_ball_pos[1]-round(self.ball_size/2)),degree=degree)
@@ -344,10 +353,8 @@ class Control:
 if __name__ == "__main__":
 	os.environ['SDL_VIDEO_CENTERED'] = '1' #center SCREEN
 	pygame.init()
-
 	pygame.display.set_caption("Hoops")
-	SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
-	
+	SCREEN = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 	Runit = Control()
 	Myclock = pygame.time.Clock()
 	while 1:
