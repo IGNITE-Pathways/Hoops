@@ -39,7 +39,6 @@ class Hoops:
 
         self.hoop_back = pygame.image.load(r'hoop_back.png').convert_alpha()
         self.hoop_front = pygame.image.load(r'hoop_front.png').convert_alpha()
-        self.background = pygame.image.load(r'backgrounds/bg.png').convert_alpha()
         self.glassboard = pygame.image.load(r'glassboard.png').convert_alpha()
         self.gear = pygame.image.load(r'gear.png').convert_alpha()
         self.debug = pygame.image.load(r'debug.png').convert_alpha()
@@ -73,6 +72,7 @@ class Hoops:
 
         # Starting ball position
         self.starting_ball_pos=(self.bx+round(self.ball_size/2),self.by+round(self.ball_size/2))
+        self.background = pygame.image.load(r'backgrounds/'+self.celestialBody.name+'.png').convert_alpha()
         self.background = pygame.transform.scale(self.background, (WIDTH,HEIGHT))
 
         #intitialize items for the startup section of the game
@@ -367,35 +367,6 @@ class Hoops:
             # Main Program -- Start --- 
             self.reset_field((self.starting_ball_pos[0]-round(self.ball_size/2),self.starting_ball_pos[1]-round(self.ball_size/2)), display=Display.SPLASH)
             pygame.display.flip()
-
-    # def settings(self):
-    #         global SCREEN, WIDTH, HEIGHT
-    #         for event in pygame.event.get():
-    #             if event.type == pygame.QUIT:
-    #                 pygame.quit(); sys.exit()
-    #             if event.type == pygame.VIDEORESIZE:
-    #                 SCREEN = pygame.display.set_mode((event.w, event.h),pygame.RESIZABLE)
-    #                 WIDTH=event.w
-    #                 HEIGHT=event.h
-    #                 self.start_up_init()
-    #             #when the user clicks the start button, change to the playing state
-    #             elif event.type == pygame.MOUSEBUTTONDOWN:
-    #                 if event.button == 1:
-    #                     mouseRect = pygame.Rect(event.pos, (1,1))
-    #                     if mouseRect.colliderect(self.startButtonRect):
-    #                         self.state += 1
-    #                         self.play_init()
-    #                         return
-    #                     elif mouseRect.colliderect(self.gearButtonRect):
-    #                         self.state = 1
-    #                         self.play_init()
-    #                         return
-
-    #         # Main Program -- Start --- 
-    #         self.reset_field((self.starting_ball_pos[0]-round(self.ball_size/2),self.starting_ball_pos[1]-round(self.ball_size/2)), display=Display.SETTINGS)
-        
-    #         pygame.display.flip()
-
 
     def play_init(self):
         #create the new variables
