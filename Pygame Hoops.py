@@ -2,6 +2,8 @@ from colors import *
 import os, sys, pygame, math, numpy, time, random
 from pygame.locals import *
 from enum import Enum
+import pygame_menu
+from typing import Tuple, Any, Optional, List
 
 # Initialize Global Variables 
 WIDTH = 1500
@@ -53,23 +55,71 @@ class Hoops:
 
         self.shoot=False
         self.bounces=0
-        self.celestialBody = Celestial.EARTH
+        self.celestialBody: Celestial = Celestial.EARTH
         self.score=0
-        self.settingsOverlay = False
+        # self.settingsOverlay = False
         self.debugEnabled = False
 
         self.startText = self.font2.render("Welcome to Hoops!", 1, (yellow))
         self.startSize = self.font2.size("Welcome to Hoops!")
         # Initialize last position on grid user clicked
         self.lastPos=(0,0)
+        # self.settings_pane = pygame.Surface((WIDTH/2,HEIGHT/2), pygame.SRCALPHA) 
+
+        self.menu = pygame_menu.Menu(
+            height=HEIGHT * 0.6,
+            theme=pygame_menu.themes.THEME_DEFAULT.copy(),
+            title='Select Celestial Body',
+            width=WIDTH * 0.6
+        )
+
+        self.menu.add.selector('',[('MERCURY', 'MERCURY')], onchange=self.change_celestial_body, selector_id='MERCURY')
+        self.menu.add.selector('',[('VENUS', 'VENUS')], onchange=self.change_celestial_body, selector_id='VENUS')
+        self.menu.add.selector('',[('EARTH', 'EARTH')], onchange=self.change_celestial_body, selector_id='EARTH')
+        self.menu.add.selector('',[('MARS', 'MARS')], onchange=self.change_celestial_body, selector_id='MARS')
+        self.menu.add.selector('',[('JUPITER', 'JUPITER')], onchange=self.change_celestial_body, selector_id='JUPITER')
+        self.menu.add.selector('',[('SATURN', 'SATURN')], onchange=self.change_celestial_body, selector_id='SATURN')
+        self.menu.add.selector('',[('NEPTUNE', 'NEPTUNE')], onchange=self.change_celestial_body, selector_id='NEPTUNE')
+        self.menu.add.selector('',[('MOON', 'MOON')], onchange=self.change_celestial_body, selector_id='MOON')
+        self.menu.add.selector('',[('SUN', 'SUN')], onchange=self.change_celestial_body, selector_id='SUN')
+        
+        self.menu.disable()
+        self.menu.full_reset()
         self.start_up_init()
+
+    def change_celestial_body(self, value: Tuple[Any, int], body: str) -> None:
+        selected, index = value
+        print(f'Selected body: {body} at index {index}')
+        # Set the body
+        if body == Celestial.MERCURY.name:
+            self.celestialBody = Celestial.MERCURY
+        elif body == Celestial.VENUS.name:
+            self.celestialBody = Celestial.VENUS
+        elif body == Celestial.EARTH.name:
+            self.celestialBody = Celestial.EARTH
+        elif body == Celestial.MARS.name:
+            self.celestialBody = Celestial.MARS
+        elif body == Celestial.JUPITER.name:
+            self.celestialBody = Celestial.JUPITER
+        elif body == Celestial.SATURN.name:
+            self.celestialBody = Celestial.SATURN
+        elif body == Celestial.NEPTUNE.name:
+            self.celestialBody = Celestial.NEPTUNE
+        elif body == Celestial.MOON.name:
+            self.celestialBody = Celestial.MOON
+        elif body == Celestial.SUN.name:
+            self.celestialBody = Celestial.SUN
+        self.menu.disable()
+        self.menu.full_reset()
+        self.start_up_init()
+        self.reset_field(ball_pos=self.starting_ball_pos)
 
     def start_up_init(self):
         self.bx=(400/1400)*WIDTH
         self.by=HEIGHT-400
         self.floor_height=(80/800)*HEIGHT
         self.gravity = self.celestialBody.value
-
+        print("Setting Celestial Body to",self.celestialBody.name, "Gtavity", self.celestialBody.value)
         # Starting ball position
         self.starting_ball_pos=(self.bx+round(self.ball_size/2),self.by+round(self.ball_size/2))
         self.background = pygame.image.load(r'backgrounds/'+self.celestialBody.name+'.png').convert_alpha()
@@ -112,8 +162,9 @@ class Hoops:
         # elif self.state == 3:
         #     self.new_game()
 
+
     # Resets the field given the ball position
-    def reset_field(self, ball_pos,degree=0, display=Display.PLAY):
+    def reset_field(self, ball_pos=(0,0),degree=0, display=Display.SPLASH):
         if degree<0 or degree>35:
             degree=0
         #SCREEN.fill(black)
@@ -137,6 +188,8 @@ class Hoops:
         # self.show_score(score_bar, "Score: "+str(self.score),WIDTH/2-50,5,white,25)
         tin = pygame.font.Font('font/IndianPoker.ttf', 25)
         score_bar.blit(tin.render(self.celestialBody.name, False, white), (10, 5))
+        score_bar.blit(tin.render("g:"+ str(self.celestialBody.value), False, white), (200, 5))
+        
         score_bar.blit(tin.render("Score: "+str(self.score), False, white), (WIDTH/2-50, 5))
         score_bar.blit(self.gear, self.gearButtonLoc)
         score_bar.blit(self.debug, self.debugButtonLoc)
@@ -164,11 +217,10 @@ class Hoops:
             # Rim1
             pygame.draw.rect(SCREEN, (yellow),Rect(self.hx,self.hy+25,5,35))
 
-        if self.settingsOverlay:
-            settings_pane = pygame.Surface((WIDTH/2,HEIGHT/2), pygame.SRCALPHA) 
-            settings_pane.fill((0,0,0,200))  
-            settings_pane.blit(tin.render("Celestial Body: ", False, white), (20, 40))
-            SCREEN.blit(settings_pane, (WIDTH/4,HEIGHT/4))
+        # if self.settingsOverlay:
+        #     self.settings_pane.fill((0,0,0,200))  
+        #     self.settings_pane.blit(tin.render("Celestial Body: ", False, white), (20, 40))
+        #     SCREEN.blit(self.settings_pane, (WIDTH/4,HEIGHT/4))
 
 
     def show_score(self, msg, x, y, color, size):
@@ -267,9 +319,10 @@ class Hoops:
             p = path[i]
             #velocity at point p
             v = velocity[i]
-            #print("p", p,"\t", "v", v)
+            if self.debugEnabled:
+                print("p", p,"\t", "v", v)
             degree=round(round(p[0]%(34*3))/3)
-            self.reset_field((p[0]-round(self.ball_size/2),p[1]-round(self.ball_size/2)),degree=degree)
+            self.reset_field((p[0]-round(self.ball_size/2),p[1]-round(self.ball_size/2)),degree=degree, display=Display.PLAY)
             pygame.display.update() 
             rim = pygame.Rect(self.hx,self.hy+4,95,40)
             rim1 = pygame.Rect(self.hx,self.hy+25,5,35)
@@ -341,7 +394,8 @@ class Hoops:
 
     def show_splash_screen(self):
             global SCREEN, WIDTH, HEIGHT
-            for event in pygame.event.get():
+            events = pygame.event.get()
+            for event in events:
                 if event.type == pygame.QUIT:
                     pygame.quit(); sys.exit()
                 if event.type == pygame.VIDEORESIZE:
@@ -358,11 +412,20 @@ class Hoops:
                             self.play_init()
                             return
                         elif mouseRect.colliderect(self.gearButtonRect):
-                            self.settingsOverlay = not self.settingsOverlay
+                            if self.menu.is_enabled():
+                                self.menu.disable()
+                                self.menu.full_reset()
+                            else:
+                                self.menu.enable()
                             return
                         elif mouseRect.colliderect(self.debugButtonRect):
                             self.debugEnabled = not self.debugEnabled
                             return
+
+            # Pass events to main_menu
+            if self.menu.is_enabled():
+                self.menu.mainloop(SCREEN, self.reset_field, disable_loop=False, fps_limit=60)
+                #self.menu.update(events)
 
             # Main Program -- Start --- 
             self.reset_field((self.starting_ball_pos[0]-round(self.ball_size/2),self.starting_ball_pos[1]-round(self.ball_size/2)), display=Display.SPLASH)
@@ -383,7 +446,11 @@ class Hoops:
                         print("MOUSEBUTTONDOWN",event.pos)
                     if event.button==1:
                         if self.gearButtonRect.collidepoint(event.pos):
-                            self.settingsOverlay = not self.settingsOverlay
+                            if self.menu.is_enabled():
+                                self.menu.disable()
+                                self.menu.full_reset()
+                            else:
+                                self.menu.enable()
                         elif self.debugButtonRect.collidepoint(event.pos):
                             self.debugEnabled = not self.debugEnabled
                         else:
@@ -397,11 +464,11 @@ class Hoops:
                         self.shoot=False
                         self.starting_ball_pos=event.pos
                     degree=round(round(self.starting_ball_pos[0]%(34*3))/3)
-                    self.reset_field((self.starting_ball_pos[0]-round(self.ball_size/2),self.starting_ball_pos[1]-round(self.ball_size/2)),degree=degree)
+                    self.reset_field((self.starting_ball_pos[0]-round(self.ball_size/2),self.starting_ball_pos[1]-round(self.ball_size/2)),degree=degree, display=Display.PLAY)
                 elif event.type == pygame.MOUSEMOTION:
                     if self.shoot:
                         degree=round(round(self.starting_ball_pos[0]%(34*3))/3)
-                        self.reset_field((self.starting_ball_pos[0]-round(self.ball_size/2),self.starting_ball_pos[1]-round(self.ball_size/2)),degree=degree)
+                        self.reset_field((self.starting_ball_pos[0]-round(self.ball_size/2),self.starting_ball_pos[1]-round(self.ball_size/2)),degree=degree, display=Display.PLAY)
                         self.lastPos=(event.pos[0],event.pos[1])
                         path, velocity, collision_point, vx, vy = self.calc_trajectory(self.lastPos)
                         for p in path:
@@ -411,11 +478,15 @@ class Hoops:
                     if self.shoot:
                         #print("Mouse Up")
                         degree=round(round(self.starting_ball_pos[0]%(34*3))/3)
-                        self.reset_field((self.starting_ball_pos[0]-round(self.ball_size/2),self.starting_ball_pos[1]-round(self.ball_size/2)),degree=degree)
+                        self.reset_field((self.starting_ball_pos[0]-round(self.ball_size/2),self.starting_ball_pos[1]-round(self.ball_size/2)),degree=degree, display=Display.PLAY)
                         if event.button==1:
                             path, velocity, collision_point, vx, vy  = self.calc_trajectory(self.lastPos)
                             self.process_path(path, velocity, collision_point, vx, vy)
                             self.shoot=False
+
+        if self.menu.is_enabled():
+            self.menu.mainloop(SCREEN, self.reset_field, disable_loop=False, fps_limit=60)
+
         pygame.display.flip()
 
 #############################################################
